@@ -1,0 +1,39 @@
+{
+  "name": "fc-tools",
+  "version": "1.0.0",
+  "description": "Kit com ferramentas e scripts para fluxos de trabalhos de desenvolvedores da field control",
+  "main": "src/index.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "npx jest",
+    "lint": "npx eslint . --cache",
+    "lint-fix": "npx eslint . --fix --cache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeoFalco/fc-tools.git"
+  },
+  "keywords": [
+    "cli",
+    "scripts",
+    "field-control"
+  ],
+  "author": "leonardo.falco@outlook.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LeoFalco/fc-tools/issues"
+  },
+  "homepage": "https://github.com/LeoFalco/fc-tools#readme",
+  "devDependencies": {
+    "eslint": "^8.34.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "jest": "^29.4.3"
+  },
+  "dependencies": {
+    "commander": "^10.0.0",
+    "execa": "^7.0.0"
+  }
+}
