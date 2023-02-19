@@ -22,6 +22,7 @@ export async function installCommands ({ program }) {
 
       await currentSubDirModule.install({ program })
     } catch (err) {
+      console.log('err', err)
       if (err.code === 'ERR_MODULE_NOT_FOUND') {
         console.warn(`WARN: file '${currentSubDirPath}' not exports a module`)
         continue

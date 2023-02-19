@@ -46,6 +46,10 @@ class DoctorCommand {
         console.error(error.message)
       })
     }
+
+    if(!errors.length) {
+      console.log('All tools are installed')
+    }
   }
 }
 

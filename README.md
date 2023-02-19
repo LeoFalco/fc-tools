@@ -2,9 +2,25 @@
 
 Kit com ferramentas e scripts para fluxos de trabalhos de desenvolvedores da field control
 
-## Comandos disponíveis
+## Instalação
 
-- `fc --help` mostra ajuda e lista comandos disponíveis
-- `fc doctor` checa se as dependências estão instaladas corretamente
-- `fc pr create` cria um novo pull request paseado na branch atual
-- `fc rebase` faz rebase da branch atual com master do remoto
+- **Passo 1**: Instalar o curl como pré requisito
+
+  ```sh
+  sudo apt install curl
+  ```
+
+- **Passo 2**: Instalação com script de uma linha
+
+  ```sh
+  curl https://raw.githubusercontent.com/LeoFalco/fc-tools/master/scripts/install.sh -s | sh
+  ```
+
+
+## Resumo dos comandos disponíveis
+
+- `field --help` mostra ajuda e lista comandos disponíveis
+- `field doctor` checa se as dependências estão instaladas corretamente
+- `field pr create` cria um novo pull request paseado na branch atual
+- `field rebase` faz rebase da branch atual com master do remoto
+- `field update` auto atualização

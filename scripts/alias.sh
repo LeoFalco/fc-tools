@@ -1,0 +1,1 @@
+alias field="node ~/.fc-tools"
