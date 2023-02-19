@@ -31,4 +31,4 @@ async function run () {
   program.parse()
 }
 
-await run()
+run()
