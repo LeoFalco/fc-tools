@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
-const LAST_UPDATE_FILE_PATH = join(CURRENT_DIR_NAME, `../../data/last-update.txt`)
+const LAST_UPDATE_FILE_PATH = join(CURRENT_DIR_NAME, '../../data/last-update.txt')
 const LAST_UPDATE_FOLDER_PATH = dirname(LAST_UPDATE_FILE_PATH)
 const TODAY = new Date().toISOString().split('T')[0]
 
@@ -19,7 +19,6 @@ export async function checkUpdate () {
 
   console.log('WARN: There is a new version available.')
   console.log("WARN: Please run 'field-update' to update.")
-
 }
 
 async function isUpdateCheckedToday () {

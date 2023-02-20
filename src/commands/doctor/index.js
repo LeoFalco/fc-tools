@@ -47,7 +47,7 @@ class DoctorCommand {
       })
     }
 
-    if(!errors.length) {
+    if (!errors.length) {
       console.log('All tools are installed')
     }
   }
