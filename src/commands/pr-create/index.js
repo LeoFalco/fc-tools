@@ -1,7 +1,15 @@
 import { execaCommand as exec } from 'execa'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import inquirer from 'inquirer'
 import YAML from 'yaml'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { Octokit } from 'octokit'
+
+const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
+const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
+const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
 
 class PrCreateCommand {
   install ({ program }) {
@@ -14,7 +22,6 @@ class PrCreateCommand {
   async action () {
     const currentBranchName = await exec('git rev-parse --abbrev-ref HEAD').then(({ stdout }) => stdout.trim())
     await exec(`git push origin ${currentBranchName} -u -f --no-verify`)
-
     const repoPath = await exec('git rev-parse --show-toplevel').then(({ stdout }) => stdout.trim())
 
     const pullRequestDescription = await buildPullRequestDescription({
@@ -26,39 +33,100 @@ class PrCreateCommand {
       repoPath
     })
 
-    const reviewers = [
-      'FieldControl/Enterprise',
-      'FieldControl/Fieldevelopers',
-      'Arcaino',
-      'brunohforcato',
-      'caiorsantanna',
-      'camargobiel',
-      'Carlos-F-Braga',
-      'gilmarferrini',
-      'godinhojoao',
-      'guilhermeviiniidev',
-      'GutoRomagnolo',
-      'helderlim',
-      'jbrandao',
-      'joaovictorlongo',
-      'kweripx',
-      'LeoFalco',
-      'lfreneda',
-      'ottonielmatheus',
-      'satakedev',
-      'sousxa',
-      'victorreinor',
-      'willaug'
-    ]
+    const repoNameWithOwner = await exec('gh repo view --json nameWithOwner --jq .nameWithOwner').then(({ stdout }) => stdout.trim())
 
-    const createPrCommand = `gh pr create --assignee @me --title "${pullRequestTitle}" --body "${pullRequestDescription}" --reviewer ${reviewers.join(',')}`
+    const [owner, repoName] = repoNameWithOwner.split('/')
 
-    await exec(createPrCommand)
+    const octokit = new Octokit({
+      auth: await exec('gh auth token').then(({ stdout }) => stdout.trim())
+    })
 
-    const url = exec('gh pr view --json url --jq .url').then(({ stdout }) => stdout.trim())
+    // const reviewers = [
+    // 'FieldControl/Enterprise',
+    // 'FieldControl/Fieldevelopers',
+    // 'Arcaino',
+    // 'brunohforcato',
+    // 'caiorsantanna',
+    // 'camargobiel',
+    // 'Carlos-F-Braga',
+    // 'gilmarferrini',
+    // 'godinhojoao',
+    // 'guilhermeviiniidev',
+    // 'GutoRomagnolo',
+    // 'helderlim',
+    // 'jbrandao',
+    // 'joaovictorlongo',
+    // 'kweripx',
+    // 'LeoFalco',
+    // 'lfreneda',
+    // 'ottonielmatheus',
+    // 'satakedev',
+    // 'sousxa',
+    // 'victorreinor',
+    // 'willaug'
+    // ]
 
-    console.log(`INFO: pr opened ${url}`)
+    const teams = await octokit.graphql(`
+      query {
+        organization(login: "${owner}") {
+          teams(first: 10, role:MEMBER) {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `)
+    console.log('teams', teams)
+
+    const scaped = escape(`gh api graphql -f query='query {
+      viewer {
+        organization(login: "${owner}") {
+          teams(first: 100) {
+            nodes {
+                name
+                members(first: 100) {
+                  nodes {
+                    login
+                  }
+                }
+                repositories(first: 100, query: "${repoName}") {
+                  nodes {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }'`)
+    console.log('scaped', scaped)
+
+    const result = await exec(scaped)
+
+    console.log('result', result)
+
+    // await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
+    // const result = await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
+    // console.log('pullRequestDescription', pullRequestDescription)
+    // console.log('PR_DESCRIPTION_FILE_PATH', PR_DESCRIPTION_FILE_PATH)
+    // console.log('result', result)
+
+    // await exec(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}  ${reviewers.length ? '--reviewers ' + reviewers.join(',') : ''}`)
+
+    // const url = await exec('gh pr view --json url --jq .url').then(({ stdout }) => stdout.trim())
+
+    // console.log(`INFO: pr opened ${url}`)
   }
+}
+
+function escape (text) {
+  return text
+    .replace(/\s+/g, ' ')// replace many spaces by one space
+    .replace(/\s/g, '\\ ') // escape spaces
+    .trim()
 }
 
 function issueNumberFromBranch ({ currentBranchName }) {
