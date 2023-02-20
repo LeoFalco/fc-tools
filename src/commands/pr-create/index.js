@@ -1,21 +1,37 @@
 import { execaCommand as exec } from 'execa'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import inquirer from 'inquirer'
 import YAML from 'yaml'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { Octokit } from 'octokit'
+
+const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
+const PR_DESCRIPTION_FILE_PATH = join(
+  CURRENT_DIR_NAME,
+  '../../../data/pr-description.txt'
+)
+const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
 
 class PrCreateCommand {
   install ({ program }) {
     program
-      .command('pr').description('manage pull requests')
-      .command('create').description('create a new pull request')
+      .command('pr')
+      .description('manage pull requests')
+      .command('create')
+      .description('create a new pull request')
       .action(this.action)
   }
 
   async action () {
-    const currentBranchName = await exec('git rev-parse --abbrev-ref HEAD').then(({ stdout }) => stdout.trim())
+    const currentBranchName = await exec(
+      'git rev-parse --abbrev-ref HEAD'
+    ).then(({ stdout }) => stdout.trim())
     await exec(`git push origin ${currentBranchName} -u -f --no-verify`)
-
-    const repoPath = await exec('git rev-parse --show-toplevel').then(({ stdout }) => stdout.trim())
+    const repoPath = await exec('git rev-parse --show-toplevel').then(
+      ({ stdout }) => stdout.trim()
+    )
 
     const pullRequestDescription = await buildPullRequestDescription({
       repoPath,
@@ -26,39 +42,102 @@ class PrCreateCommand {
       repoPath
     })
 
-    const reviewers = [
-      'FieldControl/Enterprise',
-      'FieldControl/Fieldevelopers',
-      'Arcaino',
-      'brunohforcato',
-      'caiorsantanna',
-      'camargobiel',
-      'Carlos-F-Braga',
-      'gilmarferrini',
-      'godinhojoao',
-      'guilhermeviiniidev',
-      'GutoRomagnolo',
-      'helderlim',
-      'jbrandao',
-      'joaovictorlongo',
-      'kweripx',
-      'LeoFalco',
-      'lfreneda',
-      'ottonielmatheus',
-      'satakedev',
-      'sousxa',
-      'victorreinor',
-      'willaug'
-    ]
+    const repoNameWithOwner = await exec(
+      'gh repo view --json nameWithOwner --jq .nameWithOwner'
+    ).then(({ stdout }) => stdout.trim())
 
-    const createPrCommand = `gh pr create --assignee @me --title "${pullRequestTitle}" --body "${pullRequestDescription}" --reviewer ${reviewers.join(',')}`
+    const [owner, repoName] = repoNameWithOwner.split('/')
 
-    await exec(createPrCommand)
+    const octokit = new Octokit({
+      auth: await exec('gh auth token').then(({ stdout }) => stdout.trim())
+    })
 
-    const url = exec('gh pr view --json url --jq .url').then(({ stdout }) => stdout.trim())
+    // const reviewers = [
+    // 'FieldControl/Enterprise',
+    // 'FieldControl/Fieldevelopers',
+    // 'Arcaino',
+    // 'brunohforcato',
+    // 'caiorsantanna',
+    // 'camargobiel',
+    // 'Carlos-F-Braga',
+    // 'gilmarferrini',
+    // 'godinhojoao',
+    // 'guilhermeviiniidev',
+    // 'GutoRomagnolo',
+    // 'helderlim',
+    // 'jbrandao',
+    // 'joaovictorlongo',
+    // 'kweripx',
+    // 'LeoFalco',
+    // 'lfreneda',
+    // 'ottonielmatheus',
+    // 'satakedev',
+    // 'sousxa',
+    // 'victorreinor',
+    // 'willaug'
+    // ]
+
+    const query = `#graphql
+      query {
+        organization(login: "${owner}") {
+          myTeams: teams(first: 10, role: MEMBER) {
+            nodes {
+              name
+              members(first: 50) {
+                nodes {
+                  login
+                }
+              }
+            }
+          }
+          repoTeams: teams(first: 10) {
+            nodes {
+              name
+              members(first: 50) {
+                nodes {
+                  login
+                }
+              }
+              repositories(first: 10, query: "${repoName}") {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+        }
+      }
+    `
+
+    const teams = await octokit.graphql(query)
+    const myTeams = teams.organization.myTeams.nodes
+    const repoTeams = teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length)
+    const allTeams = myTeams.concat(repoTeams)
+
+    const teamNames = [...new Set(allTeams.map(team => owner + '/' + team.name))]
+    const teamMembers = [...new Set(allTeams.map(team => team.members.nodes.map(member => member.login)).flat())]
+
+    const reviewers = teamNames.concat(teamMembers)
+
+    await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
+    const result = await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
+    console.log('pullRequestDescription', pullRequestDescription)
+    console.log('PR_DESCRIPTION_FILE_PATH', PR_DESCRIPTION_FILE_PATH)
+    console.log('result', result)
+
+    await exec(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
+
+    const url = await exec('gh pr view --json url --jq .url').then(({ stdout }) => stdout.trim())
 
     console.log(`INFO: pr opened ${url}`)
   }
+}
+
+function escape (text) {
+  return text
+    .replace(/\s+/g, ' ') // replace many spaces by one space
+    .replace(/\s/g, '\\ ') // escape spaces
+    .trim()
 }
 
 function issueNumberFromBranch ({ currentBranchName }) {
@@ -81,19 +160,23 @@ async function getPullRequestPrefix ({ repoPath }) {
     return possiblePrefixes[0]
   }
 
-  const result = await inquirer.prompt([{
-    message: 'Por favor escolha um prefixo para o pull request',
-    name: 'selectedPrefix',
-    type: 'list',
-    choices: possiblePrefixes
-  }])
+  const result = await inquirer.prompt([
+    {
+      message: 'Por favor escolha um prefixo para o pull request',
+      name: 'selectedPrefix',
+      type: 'list',
+      choices: possiblePrefixes
+    }
+  ])
 
   return result.selectedPrefix
 }
 
 async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
   const workflowFieldnewsPath = repoPath + '/.github/workflows/fieldnews.yml'
-  const ymlString = await readFile(workflowFieldnewsPath, { encoding: 'utf8' }).catch(() => null)
+  const ymlString = await readFile(workflowFieldnewsPath, {
+    encoding: 'utf8'
+  }).catch(() => null)
 
   if (!ymlString) return null
 
@@ -101,17 +184,21 @@ async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
   const step = workflow.jobs['title-validation'].steps[0]
 
   if (step.with.allowed_prefixes) {
-    return String(step.with.allowed_prefixes).split(',').map(value => value.trim())
+    return String(step.with.allowed_prefixes)
+      .split(',')
+      .map((value) => value.trim())
   }
 
   if (step.with.script) {
-    const line = step.with.script.split('\n').find(line => line.includes('ALLOWED_TITLE_PREFIXES'))
+    const line = step.with.script
+      .split('\n')
+      .find((line) => line.includes('ALLOWED_TITLE_PREFIXES'))
     if (line) {
       const lineReplaced = line.replace('const ALLOWED_TITLE_PREFIXES =', '')
       // eslint-disable-next-line no-eval
       const result = eval(lineReplaced)
       if (result && result.length) {
-        return result.map(value => value.trim())
+        return result.map((value) => value.trim())
       }
     }
   }
@@ -122,7 +209,9 @@ async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
 async function buildPullRequestDescription ({ repoPath, currentBranchName }) {
   const prTemplatePath = repoPath + '/.github/pull_request_template.md'
 
-  const prTemplate = await readFile(prTemplatePath, { encoding: 'utf8' }).catch(() => null)
+  const prTemplate = await readFile(prTemplatePath, { encoding: 'utf8' }).catch(
+    () => null
+  )
   const issueNumber = issueNumberFromBranch({ currentBranchName })
 
   const closesMessage = issueNumber && `- closes #${issueNumber}`

@@ -16,6 +16,19 @@ else
   cd - >> /dev/null
 fi
 
+. ~/.nvm/nvm.sh
+recomended_node_version=$(cat ~/.fc-tools/.nvmrc)
+nvm install $recomended_node_version
+current_node_version=$(node -v)
+
+if [ "$current_node_version" != "$recomended_node_version" ]; then
+  echo "▷ Switching node version to $recomended_node_version..."
+  nvm use $recomended_node_version >> /dev/null
+  echo "▷ Switched node version to $recomended_node_version."
+else
+  echo "▷ Node version is $recomended_node_version."
+fi
+
 cd ~/.fc-tools
 echo "▷ Installing dependencies..."
 npm install >> /dev/null
