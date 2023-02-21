@@ -1,4 +1,4 @@
-import { execaCommand as exec } from 'execa'
+import { $ } from '../../core/exec.js'
 
 class RebaseCommand {
   install ({ program }) {
@@ -9,27 +9,23 @@ class RebaseCommand {
   }
 
   async action () {
-    const statusResult = await exec('git status --porcelain')
-    if (statusResult.stdout) {
+    const statusResult = await $('git status --porcelain')
+    if (statusResult && statusResult.length) {
       console.error('ERROR: Repo is dirty, please commit or stash changes before running this script')
       process.exit(1)
     }
 
-    await exec('git fetch --tags --force')
-    await exec('git remote prune origin')
+    await $('git fetch --tags --force')
+    await $('git remote prune origin')
+    await $('git checkout master')
+    await $('git pull origin master')
 
-    const currentBranchResult = await exec('git rev-parse --abbrev-ref HEAD')
-    const currentBranchName = currentBranchResult.stdout
+    const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
-    await exec('git checkout master')
-    await exec('git pull origin master')
+    await $(`git checkout ${currentBranchName}`)
+    await $('git rebase master')
 
-    await exec(`git checkout ${currentBranchName}`)
-    await exec('git rebase master')
-
-    await exec('git checkout master')
-
-    const isCurrentBranchAlreadyMerged = await exec('git branch --merged')
+    const isCurrentBranchAlreadyMerged = await $('git branch --merged')
       .then((result) => {
         return result.stdout.split('\n')
           .map((branchName) => branchName.trim())
@@ -39,7 +35,9 @@ class RebaseCommand {
       })
 
     if (isCurrentBranchAlreadyMerged) {
-      await exec(`git branch -D ${currentBranchName}`)
+      console.log('INFO: Current branch is already merged, deleting it')
+      await $('git checkout master')
+      await $(`git branch -D ${currentBranchName}`)
     }
   }
 }
