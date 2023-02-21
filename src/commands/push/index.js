@@ -1,4 +1,5 @@
 import { execaCommand as exec } from 'execa'
+import { $ } from '../../core/exec.js'
 
 class PushCommand {
   install ({ program }) {
@@ -9,14 +10,13 @@ class PushCommand {
   }
 
   async action () {
-    const statusResult = await exec('git status --porcelain')
-    if (statusResult.stdout) {
+    const statusResult = await $('git status --porcelain')
+    if (statusResult && statusResult.length) {
       console.error('ERROR: Repo is dirty, please commit or stash changes before running this script')
       process.exit(1)
     }
 
-    const currentBranchResult = await exec('git rev-parse --abbrev-ref HEAD')
-    const currentBranchName = currentBranchResult.stdout.trim()
+    const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await exec(`git push origin ${currentBranchName} -u -f --no-verify`)
   }
 }
