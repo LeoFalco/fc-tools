@@ -1,7 +1,7 @@
-import { execaCommand as exec } from 'execa'
 import { writeFile, mkdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { $ } from './exec.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
 const LAST_UPDATE_FILE_PATH = join(CURRENT_DIR_NAME, '../../data/last-update.txt')
@@ -34,12 +34,14 @@ async function markUpdateAsCheckedToday () {
 }
 
 export async function getCurrentSha () {
-  return exec('git rev-parse HEAD').then(({ stdout }) => stdout.trim())
+  return $('git rev-parse HEAD')
 }
 
 export async function getLatestSha () {
-  await exec('git fetch')
-  return exec('git ls-remote').then(({ stdout }) => {
-    return stdout.split('\n').find(line => line.includes('refs/heads/master')).split('\t')[0]
-  })
+  await $('git fetch')
+  const lsRemoveStdout = await $('git ls-remote')
+  return lsRemoveStdout.split('\n')
+    .find(line => line.includes('refs/heads/master'))
+    .split('\t')
+    .shift()
 }

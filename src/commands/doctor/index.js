@@ -1,4 +1,4 @@
-import { execaCommand as exec } from 'execa'
+import { $ } from '../../core/exec.js'
 
 class DoctorCommand {
   install ({ program }) {
@@ -11,10 +11,11 @@ class DoctorCommand {
   async action () {
     const errors = []
     const success = []
+
     try {
-      const git = await exec('git --version')
+      const gitStdout = await $('git --version')
       success.push({
-        message: `git is successfully installed, found version: ${git.stdout.split(' ')[2]}`
+        message: `git is successfully installed, found version: ${gitStdout.split(' ')[2]}`
       })
     } catch (err) {
       errors.push({
@@ -23,9 +24,9 @@ class DoctorCommand {
     }
 
     try {
-      const gh = await exec('gh --version')
+      const ghStdout = await $('gh --version')
       success.push({
-        message: `gh is successfully installed, found version: ${gh.stdout.split(' ')[2]}`
+        message: `gh is successfully installed, found version: ${ghStdout.split(' ')[2]}`
       })
     } catch (err) {
       errors.push({

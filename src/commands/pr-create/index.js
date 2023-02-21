@@ -1,17 +1,13 @@
-import { execaCommand as exec } from 'execa'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import inquirer from 'inquirer'
 import YAML from 'yaml'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
 import { Octokit } from 'octokit'
+import { $ } from '../../core/exec.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
-const PR_DESCRIPTION_FILE_PATH = join(
-  CURRENT_DIR_NAME,
-  '../../../data/pr-description.txt'
-)
+const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
 const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
 
 class PrCreateCommand {
@@ -25,13 +21,11 @@ class PrCreateCommand {
   }
 
   async action () {
-    const currentBranchName = await exec(
-      'git rev-parse --abbrev-ref HEAD'
-    ).then(({ stdout }) => stdout.trim())
-    await exec(`git push origin ${currentBranchName} -u -f --no-verify`)
-    const repoPath = await exec('git rev-parse --show-toplevel').then(
-      ({ stdout }) => stdout.trim()
-    )
+    const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
+
+    await $(`git push origin ${currentBranchName} -u -f --no-verify`)
+
+    const repoPath = await $('git rev-parse --show-toplevel')
 
     const pullRequestDescription = await buildPullRequestDescription({
       repoPath,
@@ -42,40 +36,12 @@ class PrCreateCommand {
       repoPath
     })
 
-    const repoNameWithOwner = await exec(
-      'gh repo view --json nameWithOwner --jq .nameWithOwner'
-    ).then(({ stdout }) => stdout.trim())
+    const repoNameWithOwner = await $('gh repo view --json nameWithOwner --jq .nameWithOwner')
 
     const [owner, repoName] = repoNameWithOwner.split('/')
 
-    const octokit = new Octokit({
-      auth: await exec('gh auth token').then(({ stdout }) => stdout.trim())
-    })
-
-    // const reviewers = [
-    // 'FieldControl/Enterprise',
-    // 'FieldControl/Fieldevelopers',
-    // 'Arcaino',
-    // 'brunohforcato',
-    // 'caiorsantanna',
-    // 'camargobiel',
-    // 'Carlos-F-Braga',
-    // 'gilmarferrini',
-    // 'godinhojoao',
-    // 'guilhermeviiniidev',
-    // 'GutoRomagnolo',
-    // 'helderlim',
-    // 'jbrandao',
-    // 'joaovictorlongo',
-    // 'kweripx',
-    // 'LeoFalco',
-    // 'lfreneda',
-    // 'ottonielmatheus',
-    // 'satakedev',
-    // 'sousxa',
-    // 'victorreinor',
-    // 'willaug'
-    // ]
+    const token = await $('gh auth token')
+    const octokit = new Octokit({ auth: token })
 
     const query = `#graphql
       query {
@@ -111,7 +77,7 @@ class PrCreateCommand {
 
     const teams = await octokit.graphql(query)
       .catch((err) => {
-        console.log('WARN: no teams found', err.message)
+        console.log(`WARN: no teams found.\n${err.message}`)
         return null
       })
 
@@ -127,9 +93,9 @@ class PrCreateCommand {
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
-    await exec(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
+    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
 
-    const url = await exec('gh pr view --json url --jq .url').then(({ stdout }) => stdout.trim())
+    const url = await $('gh pr view --json url --jq .url')
 
     console.log(`INFO: pr opened ${url}`)
   }
@@ -224,9 +190,9 @@ async function buildPullRequestDescription ({ repoPath, currentBranchName }) {
 async function buildPullRequestTitle ({ repoPath }) {
   const prefix = await getPullRequestPrefix({ repoPath })
 
-  const commitMessage = await exec('git log --pretty=%B -n 1')
-    .then(({ stdout }) => stdout.replace(/.*:/, ''))
-    .then((commitMessage) => commitMessage.split('\n')[0]) // pega a primeira linha
+  const commitMessage = await $('git log --pretty=%B -n 1')
+    .then((stdout) => stdout.replace(/.*:/, ''))
+    .then((commitMessage) => commitMessage.split('\n')[0])
     .then((commitMessage) => commitMessage.trim())
     .then(capitalize)
 
