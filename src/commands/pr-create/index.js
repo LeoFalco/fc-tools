@@ -82,7 +82,7 @@ class PrCreateCommand {
         organization(login: "${owner}") {
           myTeams: teams(first: 10, role: MEMBER) {
             nodes {
-              name
+              slug
               members(first: 50) {
                 nodes {
                   login
@@ -92,7 +92,7 @@ class PrCreateCommand {
           }
           repoTeams: teams(first: 10) {
             nodes {
-              name
+              slug
               members(first: 50) {
                 nodes {
                   login
@@ -110,20 +110,22 @@ class PrCreateCommand {
     `
 
     const teams = await octokit.graphql(query)
-    const myTeams = teams.organization.myTeams.nodes
-    const repoTeams = teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length)
-    const allTeams = myTeams.concat(repoTeams)
+      .catch((err) => {
+        console.log('WARN: no teams found', err.message)
+        return null
+      })
 
-    const teamNames = [...new Set(allTeams.map(team => owner + '/' + team.name))]
+    const myTeams = teams && teams.organization.myTeams.nodes
+    const repoTeams = teams && teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length)
+    const allTeams = teams ? myTeams.concat(repoTeams) : []
+
+    const teamNames = [...new Set(allTeams.map(team => owner + '/' + team.slug))]
     const teamMembers = [...new Set(allTeams.map(team => team.members.nodes.map(member => member.login)).flat())]
 
     const reviewers = teamNames.concat(teamMembers)
 
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
-    const result = await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
-    console.log('pullRequestDescription', pullRequestDescription)
-    console.log('PR_DESCRIPTION_FILE_PATH', PR_DESCRIPTION_FILE_PATH)
-    console.log('result', result)
+    await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
     await exec(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
 
