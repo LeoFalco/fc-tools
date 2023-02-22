@@ -93,16 +93,11 @@ class PrCreateCommand {
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
-    const existingPrUrl = await $('gh pr view --json url --jq .url', {
-      reject: false
-    })
-
-    if (existingPrUrl) {
-      console.log(`WAr: pr already opened ${existingPrUrl}`)
-      return
-    }
-
     await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
+      .catch((err) => {
+        console.log(`ERROR: failed to open pr.\n${err.message}`)
+        process.exit(1)
+      })
 
     const url = await $('gh pr view --json url --jq .url')
 
