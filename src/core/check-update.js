@@ -17,8 +17,8 @@ export async function checkUpdate () {
 
   if (currentSha === latestSha) return
 
-  console.log('WARN: There is a new version available.')
-  console.log("WARN: Please run 'field-update' to update.")
+  console.warn('There is a new version available.')
+  console.warn("Please run 'field-update' to update.")
 }
 
 async function isUpdateCheckedToday () {

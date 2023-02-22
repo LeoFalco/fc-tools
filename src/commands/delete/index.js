@@ -4,7 +4,7 @@ class DeleteCommand {
   install ({ program }) {
     program
       .command('delete')
-      .description('Delete a branch or tag')
+      .description('delete a branch or tag')
       .arguments('<branch_or_tag_name>', 'Branch or tag to delete')
       .action(this.action)
   }
@@ -29,16 +29,16 @@ class DeleteCommand {
     ])
 
     if (deleteTagResult === 0) {
-      console.log(`INFO: Deleted tag \`${branchOrTagName}\``)
+      console.info(`Deleted tag \`${branchOrTagName}\``)
     }
     if (deleteBranchResult === 0) {
-      console.log(`INFO: Deleted branch \`${branchOrTagName}\``)
+      console.info(`Deleted branch \`${branchOrTagName}\``)
     }
     if (deleteRemoteTagResult === 0) {
-      console.log(`INFO: Deleted remote tag \`${branchOrTagName}\``)
+      console.info(`Deleted remote tag \`${branchOrTagName}\``)
     }
     if (deleteRemoteBranchResult === 0) {
-      console.log(`INFO: Deleted remote branch \`${branchOrTagName}\``)
+      console.info(`Deleted remote branch \`${branchOrTagName}\``)
     }
 
     await $('git remote prune origin')

@@ -4,7 +4,7 @@ class DoctorCommand {
   install ({ program }) {
     program
       .command('doctor')
-      .description('check if all required tools are installed')
+      .description('Check if all required tools are installed')
       .action(this.action)
   }
 
@@ -35,21 +35,21 @@ class DoctorCommand {
     }
 
     if (success.length) {
-      console.log('Installed tools:')
+      console.info('Installed tools')
       success.forEach((success) => {
-        console.log(success.message)
+        console.info(success.message)
       })
     }
 
     if (errors.length) {
-      console.error('Missing tools:')
+      console.warn('Missing tools:')
       errors.forEach((error) => {
-        console.error(error.message)
+        console.warn(error.message)
       })
     }
 
     if (!errors.length) {
-      console.log('All tools are installed')
+      console.info('All tools are installed')
     }
   }
 }

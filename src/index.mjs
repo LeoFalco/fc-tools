@@ -1,9 +1,11 @@
+import './core/patch-console-log.js'
 import { Command as Commander } from 'commander'
 import { installCommands } from './commands/index.js'
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkUpdate } from './core/check-update.js'
+import { $ } from './core/exec.js'
 
 async function readPackageJSON () {
   const currentDirName = dirname(fileURLToPath(import.meta.url))
@@ -23,12 +25,9 @@ async function createProgram () {
 
 async function run () {
   await checkUpdate()
-
   const program = await createProgram()
   await installCommands({ program })
-
-  console.log()
-  program.parse()
+  await program.parseAsync()
 }
 
 run()

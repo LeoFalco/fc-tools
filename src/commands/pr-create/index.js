@@ -77,7 +77,7 @@ class PrCreateCommand {
 
     const teams = await octokit.graphql(query)
       .catch((err) => {
-        console.log(`WARN: no teams found.\n${err.message}`)
+        console.warn(`Failed do request teams\n${err.message}`)
         return null
       })
 
@@ -95,13 +95,13 @@ class PrCreateCommand {
 
     await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
       .catch((err) => {
-        console.log(`ERROR: failed to open pr.\n${err.message}`)
+        console.error(`Failed to open pr.\n${err.message}`)
         process.exit(1)
       })
 
     const url = await $('gh pr view --json url --jq .url')
 
-    console.log(`INFO: pr opened ${url}`)
+    console.info(`pr opened ${url}`)
   }
 }
 

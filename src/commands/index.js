@@ -16,18 +16,16 @@ export async function installCommands ({ program }) {
     try {
       const currentSubDirModule = await import(currentSubDirPath).then((module) => module.default)
       if (!currentSubDirModule.install) {
-        console.warn(`WARN: Module '${currentSubDirName}' at '${currentSubDirPath}' does not export 'install' function`)
+        console.warn(`Module '${currentSubDirName}' at '${currentSubDirPath}' does not export 'install' function`)
         continue
       }
 
       await currentSubDirModule.install({ program })
     } catch (err) {
-      console.log('err', err)
       if (err.code === 'ERR_MODULE_NOT_FOUND') {
-        console.warn(`WARN: file '${currentSubDirPath}' not exports a module`)
+        console.warn(`file '${currentSubDirPath}' not exports a module`)
         continue
       }
-
       throw err
     }
   }

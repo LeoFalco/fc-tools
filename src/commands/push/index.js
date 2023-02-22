@@ -5,14 +5,14 @@ class PushCommand {
   install ({ program }) {
     program
       .command('push')
-      .description('Push the current branch to origin')
+      .description('push the current branch to origin')
       .action(this.action)
   }
 
   async action () {
     const statusResult = await $('git status --porcelain')
     if (statusResult && statusResult.length) {
-      console.error('ERROR: Repo is dirty, please commit or stash changes before running this script')
+      console.error('Repo is dirty, please commit or stash changes before running this script')
       process.exit(1)
     }
 
