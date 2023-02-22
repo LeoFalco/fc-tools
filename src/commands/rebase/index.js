@@ -15,7 +15,7 @@ class RebaseCommand {
       process.exit(1)
     }
 
-    await $('git fetch --tags --force')
+    await $('git fetch')
     await $('git remote prune origin')
     await $('git checkout master')
     await $('git pull origin master')
@@ -27,7 +27,7 @@ class RebaseCommand {
 
     const isCurrentBranchAlreadyMerged = await $('git branch --merged')
       .then((result) => {
-        return result.stdout.split('\n')
+        return result.split('\n')
           .map((branchName) => branchName.trim())
           .map((branchName) => branchName.replace('*', ''))
           .filter((branchName) => branchName !== 'master')
