@@ -58,5 +58,8 @@ if [ -f ~/.zshrc ]; then
   fi
 fi
 
+rm -rf ~/.fc-tools/data
+
 echo "▷ fc-tools installed."
 echo "▷ Restart your terminal to use fc-tools."
+
