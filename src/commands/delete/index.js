@@ -5,41 +5,55 @@ class DeleteCommand {
     program
       .command('delete')
       .description('delete a branch or tag')
-      .arguments('<branch_or_tag_name>', 'Branch or tag to delete')
+      .arguments('<branch_or_tag_name>', 'branch or tag to delete')
+      .option('-r, --remote', 'also delete remote branch or tag')
       .action(this.action)
   }
 
-  async action (branchOrTagName) {
+  async action (branchOrTagName, { remote }) {
     await $('git checkout master')
 
     const options = {
       reject: false, returnProperty: 'exitCode'
     }
 
-    const {
-      0: deleteTagResult,
-      1: deleteBranchResult,
-      2: deleteRemoteTagResult,
-      3: deleteRemoteBranchResult
-    } = await Promise.all([
-      $(`git tag -d ${branchOrTagName}`, options),
-      $(`git branch -D ${branchOrTagName}`, options),
-      $(`git push origin :refs/tags/${branchOrTagName} --no-verify`, options),
-      $(`git push origin :refs/heads/${branchOrTagName} --no-verify`, options)
-    ])
+    const promises = [
+      $(`git tag -d ${branchOrTagName}`, options).then((exitCode) => {
+        if (exitCode === 0) {
+          console.info('Deleted local tag')
+        } else {
+          console.info('No local tag deleted')
+        }
+      }),
+      $(`git branch -D ${branchOrTagName}`, options).then((exitCode) => {
+        if (exitCode === 0) {
+          console.info('Deleted local branch')
+        } else {
+          console.info('No local branch deleted')
+        }
+      })
+    ]
 
-    if (deleteTagResult === 0) {
-      console.info(`Deleted tag \`${branchOrTagName}\``)
+    if (remote) {
+      promises.push(
+        $(`git push origin :refs/tags/${branchOrTagName} --no-verify`, options).then((exitCode) => {
+          if (exitCode === 0) {
+            console.info('Deleted remote tag')
+          } else {
+            console.info('No remote tag deleted')
+          }
+        }),
+        $(`git push origin :refs/heads/${branchOrTagName} --no-verify`, options).then((exitCode) => {
+          if (exitCode === 0) {
+            console.info('Deleted remote branch')
+          } else {
+            console.info('No remote branch deleted')
+          }
+        })
+      )
     }
-    if (deleteBranchResult === 0) {
-      console.info(`Deleted branch \`${branchOrTagName}\``)
-    }
-    if (deleteRemoteTagResult === 0) {
-      console.info(`Deleted remote tag \`${branchOrTagName}\``)
-    }
-    if (deleteRemoteBranchResult === 0) {
-      console.info(`Deleted remote branch \`${branchOrTagName}\``)
-    }
+
+    await Promise.all(promises)
 
     await $('git remote prune origin')
   }

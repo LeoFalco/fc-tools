@@ -35,20 +35,21 @@ class DoctorCommand {
     }
 
     if (success.length) {
-      console.info('Installed tools')
       success.forEach((success) => {
         console.info(success.message)
       })
     }
 
     if (errors.length) {
-      console.warn('Missing tools:')
       errors.forEach((error) => {
         console.warn(error.message)
       })
     }
 
-    if (!errors.length) {
+    if (errors.length) {
+      console.error('Some tools are not installed, please install them')
+      process.exit(1)
+    } else {
       console.info('All tools are installed')
     }
   }

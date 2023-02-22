@@ -1,4 +1,9 @@
-alias field=". ~/.nvm/nvm.sh && nvm use $(cat ~/.fc-tools/.nvmrc) && node ~/.fc-tools"
-alias field-update="curl https://raw.githubusercontent.com/LeoFalco/fc-tools/master/scripts/install.sh -s | sh"
+function field () {
+  nvm use $(cat ~/.fc-tools/.nvmrc)
+  node ~/.fc-tools $@
+  nvm use
+}
 
-
+function field-update () {
+  curl https://raw.githubusercontent.com/LeoFalco/fc-tools/master/scripts/install.sh -s | sh
+}

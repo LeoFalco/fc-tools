@@ -16,7 +16,7 @@ class PrCreateCommand {
       .command('pr')
       .description('manage pull requests')
       .command('create')
-      .description('create a new pull request')
+      .description('create a new pull request based con current branch')
       .action(this.action)
   }
 
