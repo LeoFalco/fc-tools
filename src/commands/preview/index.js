@@ -1,4 +1,4 @@
-import { $ } from '../../core/exec.js'
+const { $ } = require('../../core/exec.js')
 
 class PreviewCommand {
   install ({ program }) {
@@ -16,4 +16,4 @@ class PreviewCommand {
   }
 }
 
-export default new PreviewCommand()
+module.exports = new PreviewCommand()

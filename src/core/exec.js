@@ -1,9 +1,9 @@
-import { execaCommand as exec } from 'execa'
-
-import chalk from 'chalk'
+const exec = require('execa')
+const chalk = require('chalk')
 
 const green = chalk.green
-export async function $ (command, options) {
+
+async function $ (command, options) {
   options = options || {}
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
   options.returnProperty = options.returnProperty || 'stdout'
@@ -22,4 +22,8 @@ export async function $ (command, options) {
   }
 
   return returnValue
+}
+
+module.exports = {
+  $
 }

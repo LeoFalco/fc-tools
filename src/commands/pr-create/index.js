@@ -1,12 +1,15 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import inquirer from 'inquirer'
-import YAML from 'yaml'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { Octokit } from 'octokit'
-import { $ } from '../../core/exec.js'
+const { mkdir } = require('node:fs/promises')
+const { readFile } = require('node:fs/promises')
+const { writeFile } = require('node:fs/promises')
+const inquirer = require('inquirer')
+const YAML = require('yaml')
+const { dirname } = require('node:path')
+const { join } = require('node:path')
+const { fileURLToPath } = require('node:url')
+const { Octokit } = require('octokit')
+const $ = require('../../core/exec.js').$
 
-const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
+const CURRENT_DIR_NAME = __dirname
 const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
 const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
 
@@ -203,4 +206,4 @@ async function buildPullRequestTitle ({ repoPath }) {
   return [prefix, commitMessage].filter(Boolean).join(' ')
 }
 
-export default new PrCreateCommand()
+module.exports = new PrCreateCommand()

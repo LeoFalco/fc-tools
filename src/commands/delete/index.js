@@ -1,4 +1,4 @@
-import { $ } from '../../core/exec.js'
+const { $ } = require('../../core/exec.js')
 
 class DeleteCommand {
   install ({ program }) {
@@ -59,4 +59,4 @@ class DeleteCommand {
   }
 }
 
-export default new DeleteCommand()
+module.exports = new DeleteCommand()

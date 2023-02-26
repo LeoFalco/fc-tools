@@ -1,5 +1,4 @@
-import { $ } from '../../core/exec.js'
-
+const { $ } = require('../../core/exec.js')
 class RebaseCommand {
   install ({ program }) {
     program
@@ -47,4 +46,4 @@ class RebaseCommand {
   }
 }
 
-export default new RebaseCommand()
+module.exports = new RebaseCommand()

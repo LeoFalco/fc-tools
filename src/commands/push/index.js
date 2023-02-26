@@ -1,5 +1,5 @@
-import { execaCommand as exec } from 'execa'
-import { $ } from '../../core/exec.js'
+const { exec } = require('execa')
+const { $ } = require('../../core/exec.js')
 
 class PushCommand {
   install ({ program }) {
@@ -21,4 +21,4 @@ class PushCommand {
   }
 }
 
-export default new PushCommand()
+module.exports = new PushCommand()

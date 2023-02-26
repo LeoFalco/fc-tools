@@ -1,11 +1,7 @@
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
-import { readdir } from 'node:fs/promises'
+const { readdir } = require('node:fs/promises')
 
-export async function installCommands ({ program }) {
-  const currentFileName = fileURLToPath(import.meta.url)
-
-  const currentDirName = dirname(currentFileName)
+async function installCommands ({ program }) {
+  const currentDirName = __dirname
 
   const currentSubDirNames = await readdir(currentDirName)
     .then((names) => names.filter((name) => name !== 'index.js'))
@@ -14,7 +10,7 @@ export async function installCommands ({ program }) {
     const currentSubDirPath = `${currentDirName}/${currentSubDirName}/index.js`
 
     try {
-      const currentSubDirModule = await import(currentSubDirPath).then((module) => module.default)
+      const currentSubDirModule = require(currentSubDirPath)
       if (!currentSubDirModule.install) {
         console.warn(`Module '${currentSubDirName}' at '${currentSubDirPath}' does not export 'install' function`)
         continue
@@ -29,4 +25,8 @@ export async function installCommands ({ program }) {
       throw err
     }
   }
+}
+
+module.exports = {
+  installCommands
 }

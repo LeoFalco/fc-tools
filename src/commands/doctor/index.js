@@ -1,4 +1,4 @@
-import { $ } from '../../core/exec.js'
+const { $ } = require('../../core/exec.js')
 
 class DoctorCommand {
   install ({ program }) {
@@ -18,6 +18,7 @@ class DoctorCommand {
         message: `git is successfully installed, found version: ${gitStdout.split(' ')[2]}`
       })
     } catch (err) {
+      console.log('err', err)
       errors.push({
         message: 'git is not installed, please install it from https://git-scm.com/downloads'
       })
@@ -29,6 +30,7 @@ class DoctorCommand {
         message: `gh is successfully installed, found version: ${ghStdout.split(' ')[2]}`
       })
     } catch (err) {
+      console.log('err', err)
       errors.push({
         message: 'gh is not installed, please install it from https://cli.github.com'
       })
@@ -55,4 +57,4 @@ class DoctorCommand {
   }
 }
 
-export default new DoctorCommand()
+module.exports = new DoctorCommand()
