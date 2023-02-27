@@ -22,14 +22,14 @@ class DeleteCommand {
         if (exitCode === 0) {
           console.info('Deleted local tag')
         } else {
-          console.info('No local tag deleted')
+          console.warn('No local tag deleted')
         }
       }),
       $(`git branch -D ${branchOrTagName}`, options).then((exitCode) => {
         if (exitCode === 0) {
           console.info('Deleted local branch')
         } else {
-          console.info('No local branch deleted')
+          console.warn('No local branch deleted')
         }
       })
     ]
@@ -40,14 +40,14 @@ class DeleteCommand {
           if (exitCode === 0) {
             console.info('Deleted remote tag')
           } else {
-            console.info('No remote tag deleted')
+            console.warn('No remote tag deleted')
           }
         }),
         $(`git push origin :refs/heads/${branchOrTagName} --no-verify`, options).then((exitCode) => {
           if (exitCode === 0) {
             console.info('Deleted remote branch')
           } else {
-            console.info('No remote branch deleted')
+            console.warn('No remote branch deleted')
           }
         })
       )
