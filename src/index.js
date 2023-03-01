@@ -5,7 +5,6 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkUpdate } from './core/check-update.js'
-import { $ } from './core/exec.js'
 
 async function readPackageJSON () {
   const currentDirName = dirname(fileURLToPath(import.meta.url))

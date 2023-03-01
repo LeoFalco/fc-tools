@@ -2,10 +2,10 @@
   "name": "fc-tools",
   "version": "1.0.0",
   "description": "Kit com ferramentas e scripts para fluxos de trabalhos de desenvolvedores da field control",
-  "main": "src/index.mjs",
+  "main": "src/index.js",
   "type": "module",
   "bin": {
-    "field": "src/index.mjs"
+    "field": "src/index.js"
   },
   "scripts": {
     "test": "npx jest",
