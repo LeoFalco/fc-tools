@@ -83,10 +83,30 @@ class PrCreateCommand {
 
     const myTeams = teams && teams.organization.myTeams.nodes
     const repoTeams = teams && teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length)
-    const allTeams = teams ? myTeams.concat(repoTeams) : []
 
-    const teamNames = [...new Set(allTeams.map(team => owner + '/' + team.slug))]
-    const teamMembers = [...new Set(allTeams.map(team => team.members.nodes.map(member => member.login)).flat())]
+    const allTeams = (teams ? myTeams.concat(repoTeams) : []).filter(team => {
+      return team.slug !== 'fieldevelopers'
+    })
+
+    const teamNames = []
+    const teamMembers = []
+
+    for (const team of allTeams) {
+      const teamName = owner + '/' + team.slug
+
+      console.info(`Team ${teamName}`)
+      console.info(`Members: ${team.members.nodes.map(member => member.login).join(', ')}`)
+
+      if (!teamMembers.includes(teamName)) {
+        teamNames.push(teamName)
+      }
+
+      for (const teamMember of teamMembers) {
+        if (!teamMembers.includes(teamMember)) {
+          teamMembers.push(teamMember)
+        }
+      }
+    }
 
     const reviewers = teamNames.concat(teamMembers)
 
