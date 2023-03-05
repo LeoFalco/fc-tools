@@ -88,25 +88,22 @@ class PrCreateCommand {
       return team.slug !== 'fieldevelopers'
     })
 
-    const teamNames = []
-    const teamMembers = []
+    console.info('My teams: ' + myTeams.map(team => team.slug).join(', '))
+    console.info('Repo teams: ' + repoTeams.map(team => team.slug).join(', '))
 
+    const teamMap = {}
     for (const team of allTeams) {
       const teamName = owner + '/' + team.slug
+      if (teamMap[teamName]) continue
 
-      console.info(`Team ${teamName}`)
-      console.info(`Members: ${team.members.nodes.map(member => member.login).join(', ')}`)
+      const teamMembers = team.members.nodes.map(member => member.login)
+      teamMap[teamName] = teamMembers
 
-      if (!teamMembers.includes(teamName)) {
-        teamNames.push(teamName)
-      }
-
-      for (const teamMember of teamMembers) {
-        if (!teamMembers.includes(teamMember)) {
-          teamMembers.push(teamMember)
-        }
-      }
+      console.info(`Team ${teamName} members: ${teamMembers.join(', ')}`)
     }
+
+    const teamNames = Object.keys(teamMap)
+    const teamMembers = Object.values(teamMap).flat()
 
     const reviewers = teamNames.concat(teamMembers)
 
