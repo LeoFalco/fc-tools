@@ -26,8 +26,9 @@ class RebaseCommand {
     await $(`git checkout ${currentBranchName}`)
     await $('git rebase master')
 
-    const isCurrentBranchAlreadyMerged = await $('git branch --merged')
+    const isCurrentBranchAlreadyMerged = await $('git branch --merged master')
       .then((result) => {
+        console.log('result', result)
         return result.split('\n')
           .map((branchName) => branchName.replace('*', ''))
           .map((branchName) => branchName.trim())
