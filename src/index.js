@@ -23,10 +23,15 @@ async function createProgram () {
 }
 
 async function run () {
-  await checkUpdate()
-  const program = await createProgram()
-  await installCommands({ program })
-  await program.parseAsync()
+  try {
+    await checkUpdate()
+    const program = await createProgram()
+    await installCommands({ program })
+    await program.parseAsync()
+  } catch (err) {
+    console.error(err.stack)
+    process.exit(1)
+  }
 }
 
 run()

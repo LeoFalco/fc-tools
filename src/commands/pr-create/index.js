@@ -81,8 +81,8 @@ class PrCreateCommand {
         return null
       })
 
-    const myTeams = teams && teams.organization.myTeams.nodes
-    const repoTeams = teams && teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length)
+    const myTeams = teams ? teams.organization.myTeams.nodes : []
+    const repoTeams = teams ? teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length) : []
 
     const allTeams = (teams ? myTeams.concat(repoTeams) : []).filter(team => {
       return team.slug !== 'fieldevelopers'
