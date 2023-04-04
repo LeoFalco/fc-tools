@@ -11,7 +11,11 @@ else
   echo "▷ fc-tools already cloned."
   cd ~/.fc-tools
   echo "▷ Updating fc-tools..."
-  git pull >> /dev/null
+
+  git fetch --all >> /dev/null
+  git reset --hard origin/master
+  git pull
+
   echo "▷ Updated fc-tools."
   cd - >> /dev/null
 fi

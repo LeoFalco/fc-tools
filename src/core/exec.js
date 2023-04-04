@@ -12,8 +12,14 @@ export async function $ (command, options) {
     cleanup: true,
     reject: options.reject
   })
-
-  console.log(`${green('$')} ${result.escapedCommand}`)
+    .then(result => {
+      console.log(`${green('$')} ${result.escapedCommand}`)
+      return result
+    })
+    .catch(err => {
+      console.log('err', err)
+      throw err
+    })
 
   const returnValue = result[options.returnProperty]
 

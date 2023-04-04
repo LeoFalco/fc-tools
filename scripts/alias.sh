@@ -1,7 +1,7 @@
 function field () {
-  nvm use $(cat ~/.fc-tools/.nvmrc)
+  nvm use $(cat ~/.fc-tools/.nvmrc) >> /dev/null
   node ~/.fc-tools $@
-  nvm use
+  nvm use &> /dev/null
 }
 
 function field-update () {
