@@ -6,7 +6,7 @@ class PushCommand {
     program
       .command('push')
       .description('push the current branch to origin')
-      .action(this.action)
+      .action(this.action.bind(this))
   }
 
   async action () {

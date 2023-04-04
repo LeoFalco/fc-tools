@@ -17,7 +17,7 @@ class PrCreateCommand {
       .description('manage pull requests')
       .command('create')
       .description('create a new pull request based con current branch')
-      .action(this.action)
+      .action(this.action.bind(this))
   }
 
   async action () {

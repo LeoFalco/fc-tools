@@ -5,6 +5,8 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkUpdate } from './core/check-update.js'
+import chalk from 'chalk'
+const { red } = chalk
 
 async function readPackageJSON () {
   const currentDirName = dirname(fileURLToPath(import.meta.url))
@@ -29,9 +31,27 @@ async function run () {
     await installCommands({ program })
     await program.parseAsync()
   } catch (err) {
-    console.error(err.stack)
-    process.exit(1)
+    console.error(formatErrorMessage(err))
+    if (isDebug()) {
+      console.error(err.stack)
+    }
+    process.exitCode = 1
   }
+}
+
+function formatErrorMessage (error) {
+  return error.message
+    .split('\n')
+    .map((line, index) => {
+      if (index === 0) return line
+      return ' '.repeat(7) + line
+    })
+    .map((line) => red(line))
+    .join('\n')
+}
+
+function isDebug () {
+  return Boolean(process.env.DEBUG)
 }
 
 run()

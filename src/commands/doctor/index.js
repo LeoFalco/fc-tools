@@ -5,7 +5,7 @@ class DoctorCommand {
     program
       .command('doctor')
       .description('Check if all required tools are installed')
-      .action(this.action)
+      .action(this.action.bind(this))
   }
 
   async action () {

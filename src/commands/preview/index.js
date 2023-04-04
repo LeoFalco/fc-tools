@@ -6,7 +6,7 @@ class PreviewCommand {
       .command('preview')
       .description('push current branch to preview environment')
       .arguments('[preview_branch_name]', 'Branch or tag to delete, defaults to preview')
-      .action(this.action)
+      .action(this.action.bind(this))
   }
 
   async action (previewBranchName) {

@@ -6,7 +6,7 @@ class RebaseCommand {
       .command('rebase')
       .description('rebase the current branch on top of the master branch')
       .option('-p, --push', 'force the rebase')
-      .action(this.action)
+      .action(this.action.bind(this))
   }
 
   async action (options) {
