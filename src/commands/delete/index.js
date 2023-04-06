@@ -49,11 +49,11 @@ class DeleteCommand {
       console.info('Remote tag exists, but not deleting because --remote flag was not set')
     }
 
-    if(!hasRemoteBranch && remote){
+    if (!hasRemoteBranch && remote) {
       console.info('Remote branch does not exist')
     }
 
-    if(!hasRemoteTag && remote){
+    if (!hasRemoteTag && remote) {
       console.info('Remote tag does not exist')
     }
 
@@ -109,7 +109,6 @@ class DeleteCommand {
     const result = await $(`git rev-parse --verify refs/tags/origin/${branchOrTagName}`, { reject: false, returnProperty: 'exitCode' })
     return isZero(result)
   }
-
 }
 
 export default new DeleteCommand()
