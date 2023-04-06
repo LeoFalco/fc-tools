@@ -32,13 +32,13 @@ class DeleteCommand {
     if (hasLocalBranch) {
       promises.push(this.deleteLocalBranch(branchOrTagName))
     } else {
-      console.info('Local branch does not exist')
+      console.warn('Local branch does not exist')
     }
 
     if (hasTag) {
       promises.push(this.deleteLocalTag(branchOrTagName))
     } else {
-      console.info('Local tag does not exist')
+      console.warn('Local tag does not exist')
     }
 
     if (hasRemoteBranch && !remote) {
@@ -50,11 +50,11 @@ class DeleteCommand {
     }
 
     if (!hasRemoteBranch && remote) {
-      console.info('Remote branch does not exist')
+      console.warn('Remote branch does not exist')
     }
 
     if (!hasRemoteTag && remote) {
-      console.info('Remote tag does not exist')
+      console.warn('Remote tag does not exist')
     }
 
     if (hasRemoteBranch && remote) {
@@ -91,7 +91,7 @@ class DeleteCommand {
   }
 
   async localBranchExists (branchOrTagName) {
-    const result = await $(`git rev-parse --verify ${branchOrTagName}`, { reject: false, returnProperty: 'exitCode' })
+    const result = await $(`git rev-parse --verify refs/heads/${branchOrTagName}`, { reject: false, returnProperty: 'exitCode' })
     return isZero(result)
   }
 
