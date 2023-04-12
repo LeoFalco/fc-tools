@@ -3,6 +3,8 @@ import { execaCommand as exec } from 'execa'
 import chalk from 'chalk'
 
 const green = chalk.green
+const red = chalk.red
+
 export async function $ (command, options) {
   options = options || {}
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
@@ -13,11 +15,11 @@ export async function $ (command, options) {
     reject: options.reject
   })
     .then(result => {
-      console.log(`${green('$')} ${result.escapedCommand}`)
+      console.log(`${green('$')} ${command}`)
       return result
     })
     .catch(err => {
-      console.log('err', err)
+      console.log(`${red('$')} ${command}`)
       throw err
     })
 
