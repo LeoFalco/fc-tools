@@ -11,13 +11,13 @@ class PreviewCommand {
 
   async action (previewBranchName) {
     previewBranchName = previewBranchName || 'preview'
-    await $(`git push origin HEAD:refs/heads/${previewBranchName} -f --no-verify`)
-    console.info(`branch "${previewBranchName}" pushed to preview environment`)
-
     const previewTagExitCode = await $(`git rev-parse --verify ${previewBranchName}`, { returnProperty: 'exitCode' })
     if (previewTagExitCode === 0) {
       await $(`git tag -d ${previewBranchName}`)
     }
+
+    await $(`git push origin HEAD:refs/heads/${previewBranchName} -f --no-verify`)
+    console.info(`branch "${previewBranchName}" pushed to preview environment`)
   }
 }
 
