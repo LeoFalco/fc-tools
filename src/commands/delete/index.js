@@ -9,15 +9,17 @@ class DeleteCommand {
     program
       .command('delete')
       .description('delete a branch or tag')
-      .arguments('<branch_or_tag_name>', 'branch or tag to delete')
+      .arguments('[branch_or_tag_name]', 'branch or tag to delete, defaults to current branch')
       .option('-r, --remote', 'also delete remote branch or tag')
       .action(this.action.bind(this))
   }
 
   async action (branchOrTagName, { remote }) {
-    if (branchOrTagName.startsWith('origin/')) {
-      branchOrTagName = branchOrTagName.replace('origin/', '')
-    }
+    branchOrTagName = branchOrTagName || ''
+    branchOrTagName = branchOrTagName.trim()
+    branchOrTagName = branchOrTagName.replace(/^origin\//, '')
+    branchOrTagName = branchOrTagName || await $('git rev-parse --abbrev-ref HEAD').then(result => result.trim())
+
     await $('git checkout master')
 
     const [hasLocalBranch, hasTag, hasRemoteBranch, hasRemoteTag] = await Promise.all([
