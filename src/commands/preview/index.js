@@ -11,7 +11,7 @@ class PreviewCommand {
 
   async action (previewBranchName) {
     previewBranchName = previewBranchName || 'preview'
-    const previewTagExitCode = await $(`git rev-parse --verify ${previewBranchName}`, { returnProperty: 'exitCode' })
+    const previewTagExitCode = await $(`git rev-parse --verify ${previewBranchName}`, { returnProperty: 'exitCode', reject: false })
     if (previewTagExitCode === 0) {
       await $(`git tag -d ${previewBranchName}`)
     }
