@@ -13,7 +13,7 @@ class PreviewCommand {
     previewBranchName = previewBranchName || 'preview'
     const previewTagExitCode = await $(`git rev-parse --verify ${previewBranchName}`, { returnProperty: 'exitCode', reject: false })
     if (previewTagExitCode === 0) {
-      await $(`git tag -d ${previewBranchName}`)
+      await $(`git tag -d ${previewBranchName}`, { reject: false })
     }
 
     await $(`git push origin HEAD:refs/heads/${previewBranchName} -f --no-verify`)
