@@ -1,4 +1,3 @@
-import { execaCommand as exec } from 'execa'
 import { $ } from '../../core/exec.js'
 
 class PushCommand {
@@ -18,6 +17,7 @@ class PushCommand {
 
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await $(`git push origin ${currentBranchName} -u -f --no-verify`)
+    console.info(`pushed branch ${currentBranchName}`)
   }
 }
 
