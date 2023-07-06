@@ -17,7 +17,7 @@ class PushCommand {
     }
 
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
-    await exec(`git push origin ${currentBranchName} -u -f --no-verify`)
+    await $(`git push origin ${currentBranchName} -u -f --no-verify`)
   }
 }
 
