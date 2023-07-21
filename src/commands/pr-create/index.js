@@ -72,6 +72,11 @@ class PrCreateCommand {
       currentBranchName,
       completion
     })
+<<<<<<< HEAD
+=======
+
+    console.log('pullRequestDescription', pullRequestDescription)
+>>>>>>> 6398e63 (feat: adiciona sugestões de fieldnews com chat gpt)
 
     const query = `#graphql
       query {
@@ -140,11 +145,11 @@ class PrCreateCommand {
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
-    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
-      .catch((err) => {
-        console.error(`Failed to open pr.\n${err.message}`)
-        process.exit(1)
-      })
+    // await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
+    //   .catch((err) => {
+    //     console.error(`Failed to open pr.\n${err.message}`)
+    //     process.exit(1)
+    //   })
 
     const url = await $('gh pr view --json url --jq .url')
 
