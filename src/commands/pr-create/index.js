@@ -1,47 +1,77 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+// @ts-check
+
 import inquirer from 'inquirer'
-import YAML from 'yaml'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Octokit } from 'octokit'
+import YAML from 'yaml'
 import { $ } from '../../core/exec.js'
+import { generateFieldNewsSuggestion } from '../../services/open-ai-api.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
 const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
 const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
 
 class PrCreateCommand {
+  /**
+   *
+   * @param {Object} param
+   * @param {import('commander').Command} param.program
+   * @returns
+   * */
   install ({ program }) {
     program
       .command('pr')
       .description('manage pull requests')
       .command('create')
       .description('create a new pull request based con current branch')
+      .option('-g, --generate,', 'use ia to generate pr description')
       .action(this.action.bind(this))
   }
 
-  async action () {
+  /**
+   * @param {Object} options
+   * @param {boolean | undefined} options.generate
+   */
+  async action (options) {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
     await $(`git push origin ${currentBranchName} -u -f --no-verify`)
-
-    const repoPath = await $('git rev-parse --show-toplevel')
-
-    const pullRequestDescription = await buildPullRequestDescription({
-      repoPath,
-      currentBranchName
-    })
-
-    const pullRequestTitle = await buildPullRequestTitle({
-      repoPath
-    })
+    const token = await $('gh auth token')
+    const octokit = new Octokit({ auth: token })
 
     const repoNameWithOwner = await $('gh repo view --json nameWithOwner --jq .nameWithOwner')
 
     const [owner, repoName] = repoNameWithOwner.split('/')
 
-    const token = await $('gh auth token')
-    const octokit = new Octokit({ auth: token })
+    const repo = await octokit.rest.repos.get({
+      owner,
+      repo: repoName
+    })
+
+    const repoDescription = repo.data.description
+    const commitMessage = await $('git log --pretty=%B -n 1')
+
+    const repoPath = await $('git rev-parse --show-toplevel')
+
+    const pullRequestTitle = await buildPullRequestTitle({
+      repoPath,
+      commitMessage
+    })
+
+    const completion = options.generate
+      ? await generateFieldNewsSuggestion({
+        pullRequestTitle,
+        repoDescription
+      })
+      : ''
+
+    const pullRequestDescription = await buildPullRequestDescription({
+      repoPath,
+      currentBranchName,
+      completion
+    })
 
     const query = `#graphql
       query {
@@ -108,7 +138,7 @@ class PrCreateCommand {
     const reviewers = teamNames.concat(teamMembers)
 
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
-    await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
+    await writeFile(PR_DESCRIPTION_FILE_PATH, options.generate ? completion : pullRequestDescription)
 
     await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
       .catch((err) => {
@@ -195,29 +225,42 @@ async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
   return null
 }
 
-async function buildPullRequestDescription ({ repoPath, currentBranchName }) {
+async function buildPullRequestDescription ({ repoPath, currentBranchName, completion }) {
   const prTemplatePath = repoPath + '/.github/pull_request_template.md'
 
-  const prTemplate = await readFile(prTemplatePath, { encoding: 'utf8' }).catch(
-    () => null
-  )
+  const prTemplate = await readFile(prTemplatePath, { encoding: 'utf8' })
+    .catch(() => null)
+
   const issueNumber = issueNumberFromBranch({ currentBranchName })
 
   const closesMessage = issueNumber && `- closes #${issueNumber}`
 
-  return [prTemplate, closesMessage].filter(Boolean).join('\n\n')
+  const content = [prTemplate, closesMessage].filter(Boolean).join('\n\n')
+
+  if (completion) {
+    const indexOfInitFieldNews = content.indexOf('<!-- Init:FieldnewsEmailContent -->')
+    const indexOfEndFieldNews = content.indexOf('<!-- End:FieldnewsEmailContent -->')
+
+    // replace content between init and end by completion
+
+    const before = content.substring(0, indexOfInitFieldNews)
+    const after = content.substring(indexOfEndFieldNews)
+
+    return [before, completion, after].join('\n\n')
+  }
+
+  return content
 }
 
-async function buildPullRequestTitle ({ repoPath }) {
+async function buildPullRequestTitle ({ repoPath, commitMessage }) {
   const prefix = await getPullRequestPrefix({ repoPath })
 
-  const commitMessage = await $('git log --pretty=%B -n 1')
-    .then((stdout) => stdout.replace(/.*:/, ''))
-    .then((commitMessage) => commitMessage.split('\n')[0])
-    .then((commitMessage) => commitMessage.trim())
-    .then(capitalize)
+  commitMessage = commitMessage
+    .replace(/.*:/, '')
+    .split('\n')[0]
+    .trim()
 
-  return [prefix, commitMessage].filter(Boolean).join(' ')
+  return [prefix, capitalize(commitMessage)].filter(Boolean).join(' ')
 }
 
 export default new PrCreateCommand()
