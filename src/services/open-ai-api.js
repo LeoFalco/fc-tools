@@ -35,5 +35,9 @@ export async function generateFieldNewsSuggestion ({ repoDescription, pullReques
     stop: '<END>'
   })
 
+<<<<<<< HEAD
   return response.data.choices[0].text.trim().replace(/\t/gm, '')
+=======
+  return response.data.choices[0].text.trim()
+>>>>>>> 6398e63 (feat: adiciona sugestões de fieldnews com chat gpt)
 }
