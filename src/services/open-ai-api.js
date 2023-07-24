@@ -1,8 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai'
 
-console.log('process.env.OPENAI_ORG', process.env.OPENAI_ORG)
-console.log('process.env.OPENAI_TOKEN', process.env.OPENAI_TOKEN)
-
 const openAIApi = new OpenAIApi(new Configuration({
   organization: process.env.OPENAI_ORG,
   apiKey: process.env.OPENAI_TOKEN
@@ -24,7 +21,7 @@ export async function generateFieldNewsSuggestion ({ repoDescription, pullReques
     "${pullRequestTitle}"
 
     Tópico "**Implementação**", onde as implementações são:
-    (melhore esse texto: "${pullRequestTitle}")
+    melhore esse texto: "${pullRequestTitle}"
 
     E adicione um último tópico "Evoluções" apresentando as evoluções que essas implementações implicam.
     <END>
