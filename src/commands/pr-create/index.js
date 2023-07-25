@@ -72,11 +72,6 @@ class PrCreateCommand {
       currentBranchName,
       completion
     })
-<<<<<<< HEAD
-=======
-
-    console.log('pullRequestDescription', pullRequestDescription)
->>>>>>> 6398e63 (feat: adiciona sugestões de fieldnews com chat gpt)
 
     const query = `#graphql
       query {
