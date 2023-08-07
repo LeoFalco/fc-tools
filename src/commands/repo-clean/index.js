@@ -67,7 +67,7 @@ class RepoCleanCommand {
 
       for (const branch of remoteBranchesToDelete) {
         console.log(`Deleting remote branch ${branch}`)
-        await $(`git push origin --delete ${branch}`)
+        await $(`git push origin --delete ${branch} --no-verify`)
       }
     }
   }

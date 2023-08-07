@@ -9,7 +9,7 @@ const red = chalk.red
 
 /**
  * @param {string} command
- * @param {Object} options - options
+ * @param {Object} [options] - options
  * @param {boolean} [options.reject] - reject promise on error (default: true)
  * @param {string} [options.returnProperty] - stdout | stderr
  * @returns {Promise<string>}
