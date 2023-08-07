@@ -41,11 +41,16 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
 
-    for (const branch of mergedBranches) {
-      await $(`git branch -D ${branch}`)
+    if (mergedBranches.length === 0) {
+      console.log('No local branches to delete')
+    } else {
+      for (const branch of mergedBranches) {
+        console.log(`Deleting local branch ${branch}`)
+        await $(`git branch -D ${branch}`)
+      }
     }
 
-    if (mergedBranches.includes(currentBranchName)) {
+    if (!mergedBranches.includes(currentBranchName)) {
       await $(`git checkout ${currentBranchName}`)
     }
 
@@ -56,18 +61,23 @@ class RepoCleanCommand {
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch.endsWith('master') === false))
 
-    const { remoteBranchesToDelete } = await inquirer.prompt([
-      {
+    if (mergedOnRemoteBranches.length === 0) {
+      console.log('No remote branches to delete')
+    } else {
+      const { remoteBranchesToDelete } = await inquirer.prompt([
+        {
 
-        type: 'checkbox',
-        name: 'remoteBranchesToDelete',
-        message: 'Select remote branches to delete',
-        choices: mergedOnRemoteBranches
+          type: 'checkbox',
+          name: 'remoteBranchesToDelete',
+          message: 'Select remote branches to delete',
+          choices: mergedOnRemoteBranches
+        }
+      ])
+
+      for (const branch of remoteBranchesToDelete) {
+        console.log(`Deleting remote branch ${branch}`)
+        await $(`git push origin --delete ${branch}`)
       }
-    ])
-
-    for (const branch of remoteBranchesToDelete) {
-      await $(`git push origin --delete ${branch}`)
     }
   }
 }
