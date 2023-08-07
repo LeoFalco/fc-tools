@@ -233,8 +233,12 @@ async function buildPullRequestDescription ({ repoPath, currentBranchName, compl
   const content = [prTemplate, closesMessage].filter(Boolean).join('\n\n')
 
   if (completion) {
-    const indexOfInitFieldNews = content.indexOf('<!-- Init:FieldnewsEmailContent -->')
-    const indexOfEndFieldNews = content.indexOf('<!-- End:FieldnewsEmailContent -->')
+    const initFieldNewsTag = '<!-- Init:FieldnewsEmailContent -->'
+    const endFieldNewsTag = '<!-- End:FieldnewsEmailContent -->'
+
+    const indexOfInitFieldNews = content.indexOf(initFieldNewsTag + initFieldNewsTag.length)
+    const indexOfEndFieldNews = content.indexOf(endFieldNewsTag)
+
     const before = content.substring(0, indexOfInitFieldNews)
     const after = content.substring(indexOfEndFieldNews)
     return [before, completion, after].join('\n\n')
