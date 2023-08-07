@@ -1,3 +1,5 @@
+// @ts-check
+
 import { execaCommand as exec } from 'execa'
 
 import chalk from 'chalk'
@@ -5,6 +7,13 @@ import chalk from 'chalk'
 const green = chalk.green
 const red = chalk.red
 
+/**
+ * @param {string} command
+ * @param {Object} options - options
+ * @param {boolean} [options.reject] - reject promise on error (default: true)
+ * @param {string} [options.returnProperty] - stdout | stderr
+ * @returns {Promise<string>}
+ */
 export async function $ (command, options) {
   options = options || {}
   options.reject = typeof options.reject === 'boolean' ? options.reject : true

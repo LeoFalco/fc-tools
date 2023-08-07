@@ -1,13 +1,7 @@
 // @ts-check
 
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { $ } from '../../core/exec.js'
 import inquirer from 'inquirer'
-
-const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
-const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
-const PR_DESCRIPTION_FOLDER_PATH = dirname(PR_DESCRIPTION_FILE_PATH)
+import { $ } from '../../core/exec.js'
 
 class RepoCleanCommand {
   /**
@@ -25,10 +19,7 @@ class RepoCleanCommand {
       .action(this.action.bind(this))
   }
 
-  /**
-   * @param {Object} options
-   */
-  async action (options) {
+  async action () {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await $('git fetch --all --prune')
     await $('git remote prune origin')
