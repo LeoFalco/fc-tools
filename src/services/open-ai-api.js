@@ -1,9 +1,9 @@
-import { Configuration, OpenAIApi } from 'openai'
+import { OpenAI } from 'openai'
 
-const openAIApi = new OpenAIApi(new Configuration({
+const openAI = new OpenAI({
   organization: process.env.OPENAI_ORG,
   apiKey: process.env.OPENAI_TOKEN
-}))
+})
 
 export async function generateFieldNewsSuggestion ({ repoDescription, pullRequestTitle }) {
   const prompt = `
@@ -27,7 +27,7 @@ export async function generateFieldNewsSuggestion ({ repoDescription, pullReques
     <END>
     `.trim()
 
-  const response = await openAIApi.createCompletion({
+  const response = await openAI.completions.create({
     prompt: prompt.replace(/\t/gm, ''),
     model: 'text-davinci-003',
     temperature: 1,
