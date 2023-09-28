@@ -51,6 +51,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
       .then((branches) => branches.filter((branch) => branch !== 'master'))
+      .then((branches) => branches.filter((branch) => branch !== 'stage'))
 
     if (mergedBranches.length === 0) {
       console.info('No local branches to delete')
