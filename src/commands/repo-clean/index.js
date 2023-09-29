@@ -73,19 +73,18 @@ class RepoCleanCommand {
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch.startsWith('HEAD') === false))
       .then((branches) => branches.filter((branch) => branch !== 'master'))
+      .then((branches) => branches.filter((branch) => branch !== 'stage'))
 
     if (mergedOnRemoteBranches.length === 0) {
       console.info('No remote branches to delete')
     } else {
-      const { remoteBranchesToDelete } = await inquirer.prompt([
-        {
+      const { remoteBranchesToDelete } = await inquirer.prompt([{
 
-          type: 'checkbox',
-          name: 'remoteBranchesToDelete',
-          message: 'Select remote branches to delete',
-          choices: mergedOnRemoteBranches
-        }
-      ])
+        type: 'checkbox',
+        name: 'remoteBranchesToDelete',
+        message: 'Select remote branches to delete',
+        choices: mergedOnRemoteBranches
+      }])
 
       for (const branch of remoteBranchesToDelete) {
         console.info(`Deleting remote branch ${branch}`)
