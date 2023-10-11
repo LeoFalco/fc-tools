@@ -3,14 +3,14 @@ import { $ } from '../../core/exec.js'
 class PreviewCommand {
   install ({ program }) {
     program
-      .command('preview')
+      .command('staging')
       .description('push current branch to preview environment')
-      .arguments('[preview_branch_name]', 'Branch or tag to delete, defaults to preview')
+      .arguments('[preview_branch_name]', 'Branch or tag to delete, defaults to staging')
       .action(this.action.bind(this))
   }
 
   async action (previewBranchName) {
-    previewBranchName = previewBranchName || 'preview'
+    previewBranchName = previewBranchName || 'staging'
     const previewTagExitCode = await $(`git rev-parse --verify ${previewBranchName}`, { returnProperty: 'exitCode', reject: false })
     if (previewTagExitCode === 0) {
       await $(`git tag -d ${previewBranchName}`, { reject: false })
