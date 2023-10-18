@@ -17,7 +17,7 @@ class PreviewCommand {
     }
 
     await $(`git push origin HEAD:refs/heads/${previewBranchName} -f --no-verify`)
-    console.info(`branch "${previewBranchName}" pushed to preview environment`)
+    console.info(`branch "${previewBranchName}" pushed`)
   }
 }
 
