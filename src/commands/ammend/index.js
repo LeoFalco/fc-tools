@@ -3,14 +3,14 @@ import { $ } from '../../core/exec.js'
 class RebaseCommand {
   install ({ program }) {
     program
-      .command('continue')
-      .description('continue rebase')
+      .command('ammend')
+      .description('git ammend and push')
       .action(this.action.bind(this))
   }
 
   async action () {
-    await $('git add -A')
-    await $('git rebase --continue --no-edit')
+    await $('git commit --amend --no-verify --no-edit')
+    await $('git push -f --no-verify')
   }
 }
 
