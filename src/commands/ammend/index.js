@@ -10,7 +10,8 @@ class RebaseCommand {
 
   async action () {
     await $('git commit --amend --no-verify --no-edit')
-    await $('git push -f --no-verify')
+    const currentBranch = await $('git rev-parse --abbrev-ref HEAD')
+    await $(`git push -f --no-verify --set-upstream origin ${currentBranch}`)
   }
 }
 
