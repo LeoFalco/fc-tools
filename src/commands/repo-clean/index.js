@@ -51,7 +51,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
       .then((branches) => branches.filter((branch) => branch !== 'master'))
-      .then((branches) => branches.filter((branch) => branch !== 'homolog'))
+      .then((branches) => branches.filter((branch) => branch !== 'preview'))
 
     if (mergedBranches.length === 0) {
       console.info('No local branches to delete')
@@ -73,7 +73,7 @@ class RepoCleanCommand {
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch.startsWith('HEAD') === false))
       .then((branches) => branches.filter((branch) => branch !== 'master'))
-      .then((branches) => branches.filter((branch) => branch !== 'homolog'))
+      .then((branches) => branches.filter((branch) => branch !== 'preview'))
 
     if (mergedOnRemoteBranches.length === 0) {
       console.info('No remote branches to delete')
