@@ -74,6 +74,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch.startsWith('HEAD') === false))
       .then((branches) => branches.filter((branch) => branch !== 'master'))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
+      .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
     if (mergedOnRemoteBranches.length === 0) {
       console.info('No remote branches to delete')
