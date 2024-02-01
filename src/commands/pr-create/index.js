@@ -114,9 +114,9 @@ class PrCreateCommand {
     const myTeams = teams ? teams.organization.myTeams.nodes : []
     const repoTeams = teams ? teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length) : []
 
-    const allTeams = (teams ? myTeams.concat(repoTeams) : []).filter(team => {
-      return team.slug !== 'fieldevelopers'
-    })
+    const allTeams = (teams ? myTeams.concat(repoTeams) : [])
+      .filter(team => team.slug !== 'fieldevelopers')
+      .filter(team => !team.slug.startsWith('fieldhack'))
 
     console.info('My teams: ' + myTeams.map(team => team.slug).join(', '))
     console.info('Repo teams: ' + repoTeams.map(team => team.slug).join(', '))
