@@ -52,6 +52,16 @@ if [ -f ~/.zshrc ]; then
   fi
 fi
 
+if [ -f ~/.config/fish/config.fish ]; then
+  if ! grep -q "fc-tools" ~/.config/fish/config.fish; then
+    echo "▷ Adding fc-tools to fish..."
+    echo "\nsource ~/.fc-tools/scripts/alias.fish.sh" >> ~/.config/fish/config.fish
+    echo "▷ Added fc-tools to fish."
+  else
+    echo "▷ fc-tools already added to fish."
+  fi
+fi
+
 echo "▷ fc-tools installed."
 echo "▷ Restart your terminal to use fc-tools."
 
