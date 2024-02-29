@@ -42,6 +42,14 @@ class RebaseCommand {
     }
 
     if (options.push && !isCurrentBranchAlreadyMerged && currentBranchName !== 'master') {
+      const authorEmail = await $('git config user.email')
+      const branchAuthorEmail = await $(`git log -1 --pretty=format:"%ae" ${currentBranchName}`)
+
+      console.log({
+        authorEmail,
+        branchAuthorEmail
+      })
+
       await $(`git push -u origin ${currentBranchName} --force --no-verify`)
     }
   }
