@@ -6,6 +6,7 @@ class RebaseCommand {
       .command('rebase')
       .description('rebase the current branch on top of the master branch')
       .option('-p, --push', 'force the rebase')
+      .option('-f, --force', 'force the rebase')
       .action(this.action.bind(this))
   }
 
@@ -45,10 +46,14 @@ class RebaseCommand {
       const authorEmail = await $('git config user.email')
       const branchAuthorEmail = await $(`git log -1 --pretty=format:"%ae" ${currentBranchName}`)
 
-      console.log({
-        authorEmail,
-        branchAuthorEmail
-      })
+      if (authorEmail !== branchAuthorEmail) {
+        if (options.force) {
+          console.warn(`You are not the author of the branch ${currentBranchName}, but pushing anyway`)
+        } else {
+          console.error(`You are not the author of the branch ${currentBranchName}, skipping push, use --force to override`)
+          process.exit(1)
+        }
+      }
 
       await $(`git push -u origin ${currentBranchName} --force --no-verify`)
     }
