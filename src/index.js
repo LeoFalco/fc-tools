@@ -1,18 +1,10 @@
 import './core/patch-console-log.js'
 import { Command as Commander } from 'commander'
 import { installCommands } from './commands/index.js'
-import { readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readPackageJSON } from './utils/read-package-json.js'
 import { checkUpdate } from './core/check-update.js'
 import chalk from 'chalk'
 const { red } = chalk
-
-async function readPackageJSON () {
-  const currentDirName = dirname(fileURLToPath(import.meta.url))
-  const packageJSONPath = join(currentDirName, '../package.json')
-  return JSON.parse(await readFile(packageJSONPath, { encoding: 'utf8' }))
-}
 
 async function createProgram () {
   const program = new Commander()

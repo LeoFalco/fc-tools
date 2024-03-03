@@ -8,7 +8,7 @@
     "field": "src/index.js"
   },
   "scripts": {
-    "test": "npx jest",
+    "test": "node --test test/",
     "lint": "npx eslint . --cache",
     "lint:fix": "npx eslint . --fix --cache",
     "updates:check": "npx npm-check-updates",
@@ -35,8 +35,7 @@
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-n": "16.6.2",
-    "eslint-plugin-promise": "6.1.1",
-    "jest": "29.7.0"
+    "eslint-plugin-promise": "6.1.1"
   },
   "dependencies": {
     "chalk": "5.3.0",
