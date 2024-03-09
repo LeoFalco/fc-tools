@@ -23,35 +23,42 @@ class RepoCleanCommand {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await $('git fetch --all --prune')
     await $('git remote prune origin')
-    await $('git checkout master')
-    await $('git pull origin master')
+
+    const defaultBranch = await $('git remote show origin').then(result => {
+      const match = result.match(/HEAD branch: (.*)/)
+      return match ? match[1] : 'master'
+    })
+
+    await $(`git checkout ${defaultBranch}`)
+    await $(`git pull origin ${defaultBranch}`)
 
     const branches = await $('git branch')
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
-      .then((branches) => branches.filter((branch) => branch !== 'master'))
+      .then((branches) => branches.filter((branch) => branch !== defaultBranch))
 
     for (const branch of branches) {
-      const isAhead = await $(`git log master..${branch} --oneline`).then((output) => output !== '')
+      const isAhead = await $(`git log ${defaultBranch}..${branch} --oneline`).then((output) => output !== '')
       if (isAhead) {
         await $(`git checkout ${branch}`)
-        await $('git rebase master')
+        await $(`git rebase ${defaultBranch}`)
         await $(`git push origin ${branch} --force --no-verify`)
       } else {
-        console.info(`Branch ${branch} is not ahead of master`)
+        console.info(`Branch ${branch} is not ahead of ${defaultBranch}`)
       }
     }
 
-    const mergedBranches = await $('git branch --merged master')
+    const mergedBranches = await $(`git branch --merged ${defaultBranch}`)
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
-      .then((branches) => branches.filter((branch) => branch !== 'master'))
+      .then((branches) => branches.filter((branch) => branch !== defaultBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
+      .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
     if (mergedBranches.length === 0) {
       console.info('No local branches to delete')

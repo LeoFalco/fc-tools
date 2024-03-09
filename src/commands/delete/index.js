@@ -20,7 +20,12 @@ class DeleteCommand {
     branchOrTagName = branchOrTagName.replace(/^origin\//, '')
     branchOrTagName = branchOrTagName || await $('git rev-parse --abbrev-ref HEAD').then(result => result.trim())
 
-    await $('git checkout master')
+    const defaultBranch = await $('git remote show origin').then(result => {
+      const match = result.match(/HEAD branch: (.*)/)
+      return match ? match[1] : 'master'
+    })
+
+    await $(`git checkout ${defaultBranch}`)
 
     const [hasLocalBranch, hasTag, hasRemoteBranch, hasRemoteTag] = await Promise.all([
       this.localBranchExists(branchOrTagName),

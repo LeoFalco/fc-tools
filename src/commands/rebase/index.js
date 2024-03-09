@@ -4,7 +4,7 @@ class RebaseCommand {
   install ({ program }) {
     program
       .command('rebase')
-      .description('rebase the current branch on top of the master branch')
+      .description('rebase the current branch on top of the default branch')
       .option('-p, --push', 'force the rebase')
       .option('-f, --force', 'force the rebase')
       .action(this.action.bind(this))
@@ -19,30 +19,35 @@ class RebaseCommand {
 
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
+    const defaultBranch = await $('git remote show origin').then(result => {
+      const match = result.match(/HEAD branch: (.*)/)
+      return match ? match[1] : 'master'
+    })
+
     await $('git fetch')
     await $('git remote prune origin')
-    await $('git checkout master')
-    await $('git pull origin master')
+    await $(`git checkout ${defaultBranch}`)
+    await $(`git pull origin ${defaultBranch}`)
 
     await $(`git checkout ${currentBranchName}`)
-    await $('git rebase master')
+    await $(`git rebase ${defaultBranch}`)
 
-    const isCurrentBranchAlreadyMerged = await $('git branch --merged master')
+    const isCurrentBranchAlreadyMerged = await $(`git branch --merged ${defaultBranch}`)
       .then((result) => {
         return result.split('\n')
           .map((branchName) => branchName.replace('*', ''))
           .map((branchName) => branchName.trim())
-          .filter((branchName) => branchName !== 'master')
+          .filter((branchName) => branchName !== defaultBranch)
           .some((branchName) => branchName === currentBranchName)
       })
 
     if (isCurrentBranchAlreadyMerged) {
       console.info('Current branch is already merged, deleting it')
-      await $('git checkout master')
+      await $(`git checkout ${defaultBranch}`)
       await $(`git branch -D ${currentBranchName}`)
     }
 
-    if (options.push && !isCurrentBranchAlreadyMerged && currentBranchName !== 'master') {
+    if (options.push && !isCurrentBranchAlreadyMerged && currentBranchName !== defaultBranch) {
       const authorEmail = await $('git config user.email')
       const branchAuthorEmail = await $(`git log -1 --pretty=format:"%ae" ${currentBranchName}`)
 
