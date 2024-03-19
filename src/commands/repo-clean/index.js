@@ -16,47 +16,48 @@ class RepoCleanCommand {
       .description('repo commands')
       .command('clean')
       .description('clean repo branches')
+      .option('-b, --base-branch <branch>', 'specify the base branch')
       .action(this.action.bind(this))
   }
 
-  async action () {
+  async action (options) {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await $('git fetch --all --prune')
     await $('git remote prune origin')
 
-    const defaultBranch = await $('git remote show origin').then(result => {
+    const baseBranch = options.baseBranch || await $('git remote show origin').then(result => {
       const match = result.match(/HEAD branch: (.*)/)
       return match ? match[1] : 'master'
     })
 
-    await $(`git checkout ${defaultBranch}`)
-    await $(`git pull origin ${defaultBranch}`)
+    await $(`git checkout ${baseBranch}`)
+    await $(`git pull origin ${baseBranch}`)
 
     const branches = await $('git branch')
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
-      .then((branches) => branches.filter((branch) => branch !== defaultBranch))
+      .then((branches) => branches.filter((branch) => branch !== baseBranch))
 
     for (const branch of branches) {
-      const isAhead = await $(`git log ${defaultBranch}..${branch} --oneline`).then((output) => output !== '')
+      const isAhead = await $(`git log ${baseBranch}..${branch} --oneline`).then((output) => output !== '')
       if (isAhead) {
         await $(`git checkout ${branch}`)
-        await $(`git rebase ${defaultBranch}`)
+        await $(`git rebase ${baseBranch}`)
         await $(`git push origin ${branch} --force --no-verify`)
       } else {
-        console.info(`Branch ${branch} is not ahead of ${defaultBranch}`)
+        console.info(`Branch ${branch} is not ahead of ${baseBranch}`)
       }
     }
 
-    const mergedBranches = await $(`git branch --merged ${defaultBranch}`)
+    const mergedBranches = await $(`git branch --merged ${baseBranch}`)
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
-      .then((branches) => branches.filter((branch) => branch !== defaultBranch))
+      .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
