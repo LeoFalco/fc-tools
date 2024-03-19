@@ -7,6 +7,7 @@ class RebaseCommand {
       .description('rebase the current branch on top of the default branch')
       .option('-p, --push', 'force the rebase')
       .option('-f, --force', 'force the rebase')
+      .option('-d, --base-branch <branch>', 'specify the base branch')
       .action(this.action.bind(this))
   }
 
@@ -19,7 +20,7 @@ class RebaseCommand {
 
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
-    const defaultBranch = await $('git remote show origin').then(result => {
+    const defaultBranch = options.baseBranch || await $('git remote show origin').then(result => {
       const match = result.match(/HEAD branch: (.*)/)
       return match ? match[1] : 'master'
     })
