@@ -39,6 +39,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
+      .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
     for (const branch of branches) {
       const isAhead = await $(`git log ${baseBranch}..${branch} --oneline`).then((output) => output !== '')
