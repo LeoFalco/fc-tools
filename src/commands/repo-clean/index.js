@@ -75,13 +75,13 @@ class RepoCleanCommand {
       await $(`git checkout ${currentBranchName}`)
     }
 
-    const mergedOnRemoteBranches = await $('git branch -r --merged origin/master')
+    const mergedOnRemoteBranches = await $(`git branch -r --merged origin/${baseBranch}`)
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.map((branch) => branch.replace('origin/', '')))
       .then((branches) => branches.filter((branch) => branch.startsWith('HEAD') === false))
-      .then((branches) => branches.filter((branch) => branch !== 'master'))
+      .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
