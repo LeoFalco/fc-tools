@@ -10,7 +10,7 @@ class RebaseCommand {
 
   async action () {
     await $('git add -A')
-    await $('git rebase --continue')
+    await $('git rebase --continue --no-edit')
   }
 }
 
