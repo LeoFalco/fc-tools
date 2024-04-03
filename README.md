@@ -16,11 +16,6 @@ Kit com ferramentas e scripts para fluxos de trabalhos de desenvolvedores da fie
   curl https://raw.githubusercontent.com/LeoFalco/fc-tools/master/scripts/install.sh -s | sh
   ```
 
-
 ## Resumo dos comandos disponíveis
 
 - `field --help` mostra ajuda e lista comandos disponíveis
-- `field doctor` checa se as dependências estão instaladas corretamente
-- `field pr create` cria um novo pull request paseado na branch atual
-- `field rebase` faz rebase da branch atual com master do remoto
-- `field update` auto atualização
