@@ -15,7 +15,8 @@ export async function $ (command, options) {
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
   options.returnProperty = options.returnProperty || 'stdout'
 
-  const spinner = ora(command)
+  const spinner = ora()
+  spinner.text = command
   spinner.start()
 
   const result = await exec(command, {
