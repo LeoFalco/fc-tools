@@ -2,10 +2,6 @@
 
 import { execaCommand as exec } from 'execa'
 import ora from 'ora'
-import chalk from 'chalk'
-
-const green = chalk.green
-const red = chalk.red
 
 /**
  * @param {string} command
