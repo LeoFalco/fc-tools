@@ -1,7 +1,7 @@
 // @ts-check
 
 import { execaCommand as exec } from 'execa'
-
+import ora from 'ora'
 import chalk from 'chalk'
 
 const green = chalk.green
@@ -19,16 +19,19 @@ export async function $ (command, options) {
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
   options.returnProperty = options.returnProperty || 'stdout'
 
+  const spinner = ora(command)
+  spinner.start()
+
   const result = await exec(command, {
     cleanup: true,
     reject: options.reject
   })
     .then(result => {
-      console.log(`${green('$')} ${command}`)
+      spinner.succeed()
       return result
     })
     .catch(err => {
-      console.log(`${red('$')} ${command}`)
+      spinner.fail()
       throw err
     })
 
