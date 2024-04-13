@@ -1,6 +1,10 @@
 import { $ } from '../../core/exec.js'
 import chalk from 'chalk'
 import { info } from '../../core/patch-console-log.js'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const { version } = require('./../../../package.json')
+
 const { cyan } = chalk
 class RebaseCommand {
   install ({ program }) {
@@ -19,10 +23,11 @@ class RebaseCommand {
 
     const [hash, author, date, message] = lastCommit.split('\n')
 
-    info(`${cyan('Author')} : ${author}`)
-    info(`${cyan('Date')}   : ${date}`)
-    info(`${cyan('Hash')}   : ${hash}`)
-    info(`${cyan('Message')}: ${message}`)
+    info(`${cyan('Version')} : ${version}`)
+    info(`${cyan('Author')}  : ${author}`)
+    info(`${cyan('Date')}    : ${date}`)
+    info(`${cyan('Hash')}    : ${hash}`)
+    info(`${cyan('Message')} : ${message}`)
   }
 }
 
