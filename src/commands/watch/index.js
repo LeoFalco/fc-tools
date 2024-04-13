@@ -1,6 +1,7 @@
 import { sleep } from 'openai/core.js'
 import { $ } from '../../core/exec.js'
 import open from 'open'
+import { info, warn } from '../../core/patch-console-log.js'
 
 class PreviewCommand {
   install ({ program }) {
@@ -19,7 +20,7 @@ class PreviewCommand {
       wait: false
     })
 
-    console.info(`Opening ${url} in browser`)
+    info(`Opening ${url} in browser`)
   }
 
   async getUrl (currentCommitSha, retries = 0) {
@@ -33,7 +34,7 @@ class PreviewCommand {
       throw new Error('Failed to get url after 3 retries')
     }
 
-    console.warn(`Failed to get url, retrying ${retries + 1}`)
+    warn(`Failed to get url, retrying ${retries + 1}`)
     await sleep(3000)
 
     return this.getUrl(currentCommitSha, retries + 1)

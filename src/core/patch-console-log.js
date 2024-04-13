@@ -1,18 +1,15 @@
 import chalk from 'chalk'
 
-const { blueBright, yellowBright, bgRedBright } = chalk
+const { bgBlueBright, bgYellowBright, bgRedBright } = chalk
 
-const standardConsoleInfo = console.info
-console.info = (...args) => {
-  standardConsoleInfo('\n', blueBright('[INFO]'), ...args)
+export const info = (...args) => {
+  console.info(bgBlueBright(' INFO '), ...args)
 }
 
-const standardConsoleWarn = console.warn
-console.warn = (...args) => {
-  standardConsoleWarn('\n', yellowBright('[WARN]'), ...args)
+export const warn = (...args) => {
+  console.warn(bgYellowBright(' WARN '), ...args)
 }
 
-const standardConsoleError = console.error
-console.error = (...args) => {
-  standardConsoleError('\n', bgRedBright('[ERRO]'), ...args)
+export const error = (...args) => {
+  console.error(bgRedBright(' ERRO '), ...args)
 }

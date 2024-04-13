@@ -1,4 +1,5 @@
 import { $ } from '../../core/exec.js'
+import { info, warn } from '../../core/patch-console-log.js'
 
 function isZero (exitCode) {
   return exitCode === 0
@@ -39,29 +40,29 @@ class DeleteCommand {
     if (hasLocalBranch) {
       promises.push(this.deleteLocalBranch(branchOrTagName))
     } else {
-      console.warn('Local branch does not exist')
+      warn('Local branch does not exist')
     }
 
     if (hasTag) {
       promises.push(this.deleteLocalTag(branchOrTagName))
     } else {
-      console.warn('Local tag does not exist')
+      warn('Local tag does not exist')
     }
 
     if (hasRemoteBranch && !remote) {
-      console.info('Remote branch exists, but not deleting because --remote flag was not set')
+      info('Remote branch exists, but not deleting because --remote flag was not set')
     }
 
     if (hasRemoteTag && !remote) {
-      console.info('Remote tag exists, but not deleting because --remote flag was not set')
+      info('Remote tag exists, but not deleting because --remote flag was not set')
     }
 
     if (!hasRemoteBranch && remote) {
-      console.warn('Remote branch does not exist')
+      warn('Remote branch does not exist')
     }
 
     if (!hasRemoteTag && remote) {
-      console.warn('Remote tag does not exist')
+      warn('Remote tag does not exist')
     }
 
     if (hasRemoteBranch && remote) {
@@ -79,22 +80,22 @@ class DeleteCommand {
 
   async deleteLocalTag (branchOrTagName) {
     await $(`git tag -d ${branchOrTagName}`)
-    console.info('Deleted local tag')
+    info('Deleted local tag')
   }
 
   async deleteLocalBranch (branchOrTagName) {
     await $(`git branch -D ${branchOrTagName}`)
-    console.info('Deleted local branch')
+    info('Deleted local branch')
   }
 
   async deleteRemoteBranch (branchOrTagName) {
     await $(`git push origin :refs/heads/${branchOrTagName} --no-verify`)
-    console.info('Deleted remote branch')
+    info('Deleted remote branch')
   }
 
   async deleteRemoteTag (branchOrTagName) {
     await $(`git push origin :refs/tags/${branchOrTagName} --no-verify`)
-    console.info('Deleted remote tag')
+    info('Deleted remote tag')
   }
 
   async localBranchExists (branchOrTagName) {

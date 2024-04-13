@@ -1,5 +1,6 @@
 import { $ } from '../../core/exec.js'
 import chalk from 'chalk'
+import { info } from '../../core/patch-console-log.js'
 const { cyan } = chalk
 class RebaseCommand {
   install ({ program }) {
@@ -18,10 +19,10 @@ class RebaseCommand {
 
     const [hash, author, date, message] = lastCommit.split('\n')
 
-    console.info(`${cyan('Author')} : ${author}`)
-    console.info(`${cyan('Date')}   : ${date}`)
-    console.info(`${cyan('Hash')}   : ${hash}`)
-    console.info(`${cyan('Message')}: ${message}`)
+    info(`${cyan('Author')} : ${author}`)
+    info(`${cyan('Date')}   : ${date}`)
+    info(`${cyan('Hash')}   : ${hash}`)
+    info(`${cyan('Message')}: ${message}`)
   }
 }
 

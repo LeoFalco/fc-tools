@@ -1,4 +1,5 @@
 import { $ } from '../../core/exec.js'
+import { error, info } from '../../core/patch-console-log.js'
 
 class PushCommand {
   install ({ program }) {
@@ -11,13 +12,13 @@ class PushCommand {
   async action () {
     const statusResult = await $('git status --porcelain')
     if (statusResult && statusResult.length) {
-      console.error('Repo is dirty, please commit or stash changes before running this script')
+      error('Repo is dirty, please commit or stash changes before running this script')
       process.exit(1)
     }
 
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
     await $(`git push origin ${currentBranchName} -u -f --no-verify`)
-    console.info(`pushed branch ${currentBranchName}`)
+    info(`pushed branch ${currentBranchName}`)
   }
 }
 

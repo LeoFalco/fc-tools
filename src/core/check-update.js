@@ -2,6 +2,7 @@ import { writeFile, mkdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { $ } from './exec.js'
+import { warn } from './patch-console-log.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
 const LAST_UPDATE_FILE_PATH = join(CURRENT_DIR_NAME, '../../data/last-update.txt')
@@ -17,8 +18,8 @@ export async function checkUpdate () {
 
   if (currentSha === latestSha) return
 
-  console.warn('There is a new version available.')
-  console.warn("Please run 'field-update' to update.")
+  warn('There is a new version available.')
+  warn("Please run 'field-update' to update.")
 }
 
 async function isUpdateCheckedToday () {

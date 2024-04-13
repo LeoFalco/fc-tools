@@ -1,4 +1,5 @@
 import { $ } from '../../core/exec.js'
+import { info } from '../../core/patch-console-log.js'
 
 class PreviewCommand {
   install ({ program }) {
@@ -17,7 +18,7 @@ class PreviewCommand {
     }
 
     await $(`git push origin HEAD:refs/heads/${previewBranchName} -f --no-verify`)
-    console.info(`branch "${previewBranchName}" pushed`)
+    info(`branch "${previewBranchName}" pushed`)
   }
 }
 

@@ -2,6 +2,7 @@
 
 import inquirer from 'inquirer'
 import { $ } from '../../core/exec.js'
+import { info } from '../../core/patch-console-log.js'
 
 class RepoCleanCommand {
   /**
@@ -48,7 +49,7 @@ class RepoCleanCommand {
         await $(`git rebase ${baseBranch}`)
         await $(`git push origin ${branch} --force --no-verify`)
       } else {
-        console.info(`Branch ${branch} is not ahead of ${baseBranch}`)
+        info(`Branch ${branch} is not ahead of ${baseBranch}`)
       }
     }
 
@@ -63,10 +64,10 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
     if (mergedBranches.length === 0) {
-      console.info('No local branches to delete')
+      info('No local branches to delete')
     } else {
       for (const branch of mergedBranches) {
-        console.info(`Deleting local branch ${branch}`)
+        info(`Deleting local branch ${branch}`)
         await $(`git branch -D ${branch}`)
       }
     }
@@ -86,7 +87,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
 
     if (mergedOnRemoteBranches.length === 0) {
-      console.info('No remote branches to delete')
+      info('No remote branches to delete')
     } else {
       const { remoteBranchesToDelete } = await inquirer.prompt([{
 
@@ -97,7 +98,7 @@ class RepoCleanCommand {
       }])
 
       for (const branch of remoteBranchesToDelete) {
-        console.info(`Deleting remote branch ${branch}`)
+        info(`Deleting remote branch ${branch}`)
         await $(`git push origin --delete ${branch} --no-verify`)
       }
     }

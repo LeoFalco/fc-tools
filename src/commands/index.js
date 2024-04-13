@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 import { readdir } from 'node:fs/promises'
+import { warn } from '../core/patch-console-log.js'
 
 export async function installCommands ({ program }) {
   const currentFileName = fileURLToPath(import.meta.url)
@@ -16,14 +17,14 @@ export async function installCommands ({ program }) {
     try {
       const currentSubDirModule = await import(currentSubDirPath).then((module) => module.default)
       if (!currentSubDirModule.install) {
-        console.warn(`Module '${currentSubDirName}' at '${currentSubDirPath}' does not export 'install' function`)
+        warn(`Module '${currentSubDirName}' at '${currentSubDirPath}' does not export 'install' function`)
         continue
       }
 
       await currentSubDirModule.install({ program })
     } catch (err) {
       if (err.code === 'ERR_MODULE_NOT_FOUND') {
-        console.warn(`file '${currentSubDirPath}' not exports a module`)
+        warn(`file '${currentSubDirPath}' not exports a module`)
         continue
       }
       throw err

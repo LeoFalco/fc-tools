@@ -1,4 +1,5 @@
 import { $ } from '../../core/exec.js'
+import { error, info, warn } from '../../core/patch-console-log.js'
 
 class RebaseCommand {
   install ({ program }) {
@@ -14,7 +15,7 @@ class RebaseCommand {
   async action (options) {
     const statusResult = await $('git status --porcelain')
     if (statusResult && statusResult.length) {
-      console.error('Repo is dirty, please commit or stash changes before running this script')
+      error('Repo is dirty, please commit or stash changes before running this script')
       process.exit(1)
     }
 
@@ -43,7 +44,7 @@ class RebaseCommand {
       })
 
     if (isCurrentBranchAlreadyMerged) {
-      console.info('Current branch is already merged, deleting it')
+      info('Current branch is already merged, deleting it')
       await $(`git checkout ${baseBranch}`)
       await $(`git branch -D ${currentBranchName}`)
     }
@@ -54,9 +55,9 @@ class RebaseCommand {
 
       if (authorEmail !== branchAuthorEmail) {
         if (options.force) {
-          console.warn(`You are not the author of the branch ${currentBranchName}, but pushing anyway`)
+          warn(`You are not the author of the branch ${currentBranchName}, but pushing anyway`)
         } else {
-          console.error(`You are not the author of the branch ${currentBranchName}, skipping push, use --force to override`)
+          error(`You are not the author of the branch ${currentBranchName}, skipping push, use --force to override`)
           process.exit(1)
         }
       }

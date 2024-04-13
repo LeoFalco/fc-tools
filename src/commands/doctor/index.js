@@ -1,4 +1,5 @@
 import { $ } from '../../core/exec.js'
+import { error, info, warn } from '../../core/patch-console-log.js'
 
 class DoctorCommand {
   install ({ program }) {
@@ -36,21 +37,21 @@ class DoctorCommand {
 
     if (success.length) {
       success.forEach((success) => {
-        console.info(success.message)
+        info(success.message)
       })
     }
 
     if (errors.length) {
       errors.forEach((error) => {
-        console.warn(error.message)
+        warn(error.message)
       })
     }
 
     if (errors.length) {
-      console.error('Some tools are not installed, please install them')
+      error('Some tools are not installed, please install them')
       process.exit(1)
     } else {
-      console.info('All tools are installed')
+      info('All tools are installed')
     }
   }
 }

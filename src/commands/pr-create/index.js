@@ -8,6 +8,7 @@ import { Octokit } from 'octokit'
 import YAML from 'yaml'
 import { $ } from '../../core/exec.js'
 import { generateFieldNewsSuggestion } from '../../services/open-ai-api.js'
+import { error, info, warn } from '../../core/patch-console-log.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
 const PR_DESCRIPTION_FILE_PATH = join(CURRENT_DIR_NAME, '../../../data/pr-description.txt')
@@ -107,7 +108,7 @@ class PrCreateCommand {
 
     const teams = await octokit.graphql(query)
       .catch((err) => {
-        console.warn(`Failed do request teams\n${err.message}`)
+        warn(`Failed do request teams\n${err.message}`)
         return null
       })
 
@@ -118,8 +119,8 @@ class PrCreateCommand {
       .filter(team => team.slug !== 'fieldevelopers')
       .filter(team => !team.slug.startsWith('fieldhack'))
 
-    console.info('My teams: ' + myTeams.map(team => team.slug).join(', '))
-    console.info('Repo teams: ' + repoTeams.map(team => team.slug).join(', '))
+    info('My teams: ' + myTeams.map(team => team.slug).join(', '))
+    info('Repo teams: ' + repoTeams.map(team => team.slug).join(', '))
 
     const teamMap = {}
     for (const team of allTeams) {
@@ -129,7 +130,7 @@ class PrCreateCommand {
       const teamMembers = team.members.nodes.map(member => member.login)
       teamMap[teamName] = teamMembers
 
-      console.info(`Team ${teamName} members: ${teamMembers.join(', ')}`)
+      info(`Team ${teamName} members: ${teamMembers.join(', ')}`)
     }
 
     const teamNames = Object.keys(teamMap)
@@ -142,13 +143,13 @@ class PrCreateCommand {
 
     await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
       .catch((err) => {
-        console.error(`Failed to open pr.\n${err.message}`)
+        error(`Failed to open pr.\n${err.message}`)
         process.exit(1)
       })
 
     const url = await $('gh pr view --json url --jq .url')
 
-    console.info(`pr opened ${url}`)
+    info(`pr opened ${url}`)
   }
 }
 
