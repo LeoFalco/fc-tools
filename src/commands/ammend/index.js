@@ -3,8 +3,8 @@ import { $ } from '../../core/exec.js'
 class RebaseCommand {
   install ({ program }) {
     program
-      .command('ammend')
-      .description('git ammend and push')
+      .command('amend')
+      .description('git amend and push')
       .action(this.action.bind(this))
   }
 
