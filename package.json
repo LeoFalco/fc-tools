@@ -41,7 +41,7 @@
     "chalk": "5.3.0",
     "commander": "12.0.0",
     "execa": "8.0.1",
-    "inquirer": "9.2.18",
+    "inquirer": "9.2.20",
     "octokit": "3.2.1",
     "open": "10.1.0",
     "openai": "4.33.1",
