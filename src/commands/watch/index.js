@@ -9,25 +9,31 @@ class PreviewCommand {
       .command('watch')
       .description('watch ci in browser')
       .action(this.action.bind(this))
+      .option('-w --web', 'open in browser')
   }
 
-  async action () {
+  async action (options) {
     const currentCommitSha = await $('git rev-parse HEAD')
 
-    const url = await this.getUrl(currentCommitSha)
+    const { databaseId, url, name } = await this.fetchRunInfo(currentCommitSha)
 
-    await open(url, {
-      wait: false
-    })
-
-    info(`Opening ${url} in browser`)
+    if (options.web) {
+      info(`Opening ${url} in browser`)
+      await open(url)
+    } else {
+      info(`Watching run ${name}`)
+      await $(`gh run watch ${databaseId} -i 1 --exit-status`, { stdio: 'inherit' })
+      await $('notify-send Run finished')
+    }
   }
 
-  async getUrl (currentCommitSha, retries = 0) {
-    const url = await $(`gh run list --commit ${currentCommitSha} --event push --json url --jq .[0].url`)
+  async fetchRunInfo (currentCommitSha, retries = 0) {
+    await sleep(1000)
+    const data = await $(`gh run list --commit ${currentCommitSha} --event push --json databaseId,url,name`)
+      .then(JSON.parse)
 
-    if (url) {
-      return url
+    if (data && data.length) {
+      return data[0]
     }
 
     if (retries > 3) {
@@ -35,9 +41,8 @@ class PreviewCommand {
     }
 
     warn(`Failed to get url, retrying ${retries + 1}`)
-    await sleep(3000)
 
-    return this.getUrl(currentCommitSha, retries + 1)
+    return this.fetchRunInfo(currentCommitSha, retries + 1)
   }
 }
 
