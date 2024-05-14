@@ -41,7 +41,7 @@
     "chalk": "5.3.0",
     "commander": "12.0.0",
     "execa": "8.0.1",
-    "inquirer": "9.2.20",
+    "inquirer": "9.2.21",
     "node-notifier": "10.0.1",
     "octokit": "3.2.1",
     "open": "10.1.0",
