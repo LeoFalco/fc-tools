@@ -1,10 +1,5 @@
 import { OpenAI } from 'openai'
 
-const openAI = new OpenAI({
-  organization: process.env.OPENAI_ORG,
-  apiKey: process.env.OPENAI_TOKEN
-})
-
 export async function generateFieldNewsSuggestion ({ repoDescription, pullRequestTitle }) {
   const prompt = `
     Comunique um e-mail descolado de uma alteração no código com descrição que deve ser explicativa para o público em geral.
@@ -27,7 +22,10 @@ export async function generateFieldNewsSuggestion ({ repoDescription, pullReques
     <END>
     `.trim()
 
-  const response = await openAI.completions.create({
+  const response = await new OpenAI({
+    organization: process.env.OPENAI_ORG,
+    apiKey: process.env.OPENAI_TOKEN
+  }).completions.create({
     prompt: prompt.replace(/\t/gm, ''),
     model: 'text-davinci-003',
     temperature: 1,
