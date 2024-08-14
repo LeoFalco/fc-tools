@@ -40,7 +40,7 @@
   "dependencies": {
     "chalk": "5.3.0",
     "commander": "12.1.0",
-    "execa": "9.3.0",
+    "execa": "9.3.1",
     "inquirer": "10.0.1",
     "node-notifier": "10.0.1",
     "octokit": "4.0.2",
