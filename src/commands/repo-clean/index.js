@@ -62,6 +62,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
+      .then((branches) => branches.filter((branch) => branch.startsWith('master') === false))
 
     if (mergedBranches.length === 0) {
       info('No local branches to delete')
@@ -85,12 +86,12 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
+      .then((branches) => branches.filter((branch) => branch.startsWith('master') === false))
 
     if (mergedOnRemoteBranches.length === 0) {
       info('No remote branches to delete')
     } else {
       const { remoteBranchesToDelete } = await inquirer.prompt([{
-
         type: 'checkbox',
         name: 'remoteBranchesToDelete',
         message: 'Select remote branches to delete',
