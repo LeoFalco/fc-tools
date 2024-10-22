@@ -40,7 +40,7 @@ class RebaseCommand {
           .map((branchName) => branchName.replace('*', ''))
           .map((branchName) => branchName.trim())
           .filter((branchName) => branchName !== baseBranch)
-          .filter((branchName) => branchName !== 'master-old')
+          .filter((branchName) => !branchName.startsWith(baseBranch))
           .some((branchName) => branchName === currentBranchName)
       })
 
