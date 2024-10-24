@@ -32,6 +32,7 @@ class RebaseCommand {
     await $(`git pull origin ${baseBranch}`)
 
     await $(`git checkout ${currentBranchName}`)
+    await $(`git pull origin ${currentBranchName} --rebase`)
     await $(`git rebase ${baseBranch}`)
 
     const isCurrentBranchAlreadyMerged = await $(`git branch --merged ${baseBranch}`)

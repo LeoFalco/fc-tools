@@ -47,6 +47,7 @@ class RepoCleanCommand {
       const isAhead = await $(`git log ${baseBranch}..${branch} --oneline`).then((output) => output !== '')
       if (isAhead) {
         await $(`git checkout ${branch}`)
+        await $(`git pull origin ${branch} --rebase`)
         await $(`git rebase ${baseBranch}`)
         await $(`git push origin ${branch} --force --no-verify`)
       } else {
