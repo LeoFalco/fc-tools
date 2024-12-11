@@ -1,4 +1,3 @@
-import { sleep } from 'openai/core.js'
 import { $ } from '../../core/exec.js'
 import open from 'open'
 import { info, warn } from '../../core/patch-console-log.js'
