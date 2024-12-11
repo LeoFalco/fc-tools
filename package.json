@@ -43,7 +43,7 @@
     "date-fns": "4.1.0",
     "dotenv": "16.4.7",
     "execa": "9.5.2",
-    "inquirer": "12.0.0",
+    "inquirer": "12.2.0",
     "lodash-es": "4.17.21",
     "node-notifier": "10.0.1",
     "octokit": "4.0.2",
