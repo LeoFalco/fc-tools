@@ -1,5 +1,4 @@
 import { $ } from '../../core/exec.js'
-import { info } from '../../core/patch-console-log.js'
 
 class PreviewCommand {
   install ({ program }) {
@@ -10,7 +9,7 @@ class PreviewCommand {
   }
 
   async action () {
-    const currentBranch = await $('git rev-parse --abbrev-ref HEAD').then(result => result.trim())
+    const initialBranch = await $('git rev-parse --abbrev-ref HEAD').then(result => result.trim())
     const defaultBranch = await $('git remote show origin').then(result => {
       const match = result.match(/HEAD branch: (.*)/)
       return match ? match[1] : 'master'
@@ -37,15 +36,13 @@ class PreviewCommand {
     // rebase homolog branch on top of default branch
     await $(`git rebase ${defaultBranch}`)
 
-    // rebase current branch on top of homolog branch
-    await $(`git checkout ${currentBranch}`)
-    await $('git rebase homolog')
+    // get all commit hashes between default branch and initial branch
+    const commitHashes = await $(`git log ${defaultBranch}..${initialBranch} --format=%H`).then(result => result.trim().split('\n'))
 
-    // git checkout homolog
-    await $('git checkout homolog')
-
-    // git merge current branch
-    await $(`git merge ${currentBranch}`)
+    for (const commitHash of commitHashes) {
+      // cherry-pick commit
+      await $(`git cherry-pick ${commitHash}`)
+    }
 
     // push homolog branch to remote
     await $('git push origin homolog -f --no-verify')
