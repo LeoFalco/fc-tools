@@ -41,6 +41,12 @@ class PreviewCommand {
     await $(`git checkout ${currentBranch}`)
     await $('git rebase homolog')
 
+    // git checkout homolog
+    await $('git checkout homolog')
+
+    // git merge current branch
+    await $(`git merge ${currentBranch}`)
+
     // push homolog branch to remote
     await $('git push origin homolog -f')
   }
