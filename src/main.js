@@ -26,7 +26,7 @@ async function createProgram () {
   const packageJSON = await readPackageJSON()
 
   return program
-    .name(packageJSON.name)
+    .name('field')
     .version(packageJSON.version)
     .description(packageJSON.description)
 }
