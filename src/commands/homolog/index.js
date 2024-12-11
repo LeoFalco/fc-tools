@@ -46,6 +46,8 @@ class PreviewCommand {
 
     // push homolog branch to remote
     await $('git push origin homolog -f --no-verify')
+
+    await $(`git checkout ${initialBranch}`)
   }
 }
 
