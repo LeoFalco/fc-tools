@@ -48,7 +48,7 @@ class PreviewCommand {
     await $(`git merge ${currentBranch}`)
 
     // push homolog branch to remote
-    await $('git push origin homolog -f')
+    await $('git push origin homolog -f --no-verify')
   }
 }
 
