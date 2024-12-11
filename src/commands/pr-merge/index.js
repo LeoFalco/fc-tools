@@ -20,9 +20,7 @@ class PrMergeCommand {
    * @param {Object} options
    */
   async action (options) {
-    await $('gh pr merge -d -r --admin', {
-      stdio: 'inherit'
-    })
+    await $('gh pr merge -d -r --admin', {})
 
     console.log('PR merged successfully')
   }
