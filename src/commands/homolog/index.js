@@ -23,7 +23,7 @@ class PreviewCommand {
     await $(`git pull origin ${defaultBranch}`)
 
     // delete local homolog branch
-    await $('git branch -D homolog')
+    await $('git branch -D homolog', { reject: false })
 
     const homologBranchExistsOnRemote = await $('git ls-remote --heads origin homolog', { returnProperty: 'exitCode', reject: false }).then(result => result === 0)
 
