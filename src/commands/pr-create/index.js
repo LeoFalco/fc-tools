@@ -23,9 +23,7 @@ class PrCreateCommand {
    * */
   install ({ program }) {
     program
-      .command('pr')
-      .description('manage pull requests')
-      .command('create')
+      .command('pr-create')
       .description('create a new pull request based con current branch')
       .option('-g, --generate,', 'use ia to generate pr description')
       .action(this.action.bind(this))
