@@ -7,14 +7,14 @@ async function run () {
 
   console.log('Current directory:', CURRENT_DIR)
 
-  await $(`node ${CURRENT_DIR}/src/update.js`, {
+  await $(`node ${CURRENT_DIR}/update.js`, {
     stdio: 'inherit',
     loading: false
   })
 
   const args = process.argv.slice(2).join(' ')
 
-  const exitCode = await $(`node --no-warnings ${CURRENT_DIR}/src/main.js ${args}`, {
+  const exitCode = await $(`node --no-warnings ${CURRENT_DIR}/main.js ${args}`, {
     stdio: 'inherit',
     reject: false,
     returnProperty: 'exitCode',
