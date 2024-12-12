@@ -1,6 +1,6 @@
 function field () {
   nvm use $(cat ~/.fc-tools/.nvmrc) >> /dev/null
-  node ~/.fc-tools $@
+  node --no-warnings ~/.fc-tools $@
   nvm use &> /dev/null
 }
 

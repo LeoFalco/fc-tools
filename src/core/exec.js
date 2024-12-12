@@ -18,12 +18,9 @@ export async function $ (command, options) {
   options.returnProperty = options.returnProperty || 'stdout'
   options.loading = typeof options.loading === 'boolean' ? options.loading : true
 
-  const spinner = ora()
-  spinner.text = command
-
-  if (options.loading) {
-    spinner.start()
-  }
+  const spinner = options.loading
+    ? ora({ text: command }).start()
+    : null
 
   const result = await exec(command, {
     cleanup: true,
@@ -31,11 +28,11 @@ export async function $ (command, options) {
     stdio: options.stdio || 'pipe'
   })
     .then(result => {
-      spinner.succeed()
+      spinner?.succeed()
       return result
     })
     .catch(err => {
-      spinner.fail()
+      spinner?.fail()
       throw err
     })
 
