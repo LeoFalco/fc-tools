@@ -7,6 +7,7 @@ async function run () {
   })
 
   const args = process.argv.slice(2).join(' ')
+  console.log(`node src/main.js ${args}`)
 
   const exitCode = await $(`node src/main.js ${args}`, {
     stdio: 'inherit',
