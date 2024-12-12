@@ -2,13 +2,17 @@ import { $ } from './core/exec.js'
 
 async function run () {
   await $('node src/update.js', {
-    stdio: 'inherit'
+    stdio: 'inherit',
+    loading: false
   })
 
-  const exitCode = await $('node src/main.js', {
+  const args = process.argv.slice(2).join(' ')
+
+  const exitCode = await $(`node src/main.js ${args}`, {
     stdio: 'inherit',
     reject: false,
-    returnProperty: 'exitCode'
+    returnProperty: 'exitCode',
+    loading: false
   })
 
   process.exit(exitCode)

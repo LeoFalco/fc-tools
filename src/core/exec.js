@@ -8,6 +8,7 @@ import ora from 'ora'
  * @param {Object} [options] - options
  * @param {boolean} [options.reject] - reject promise on error (default: true)
  * @param {string} [options.returnProperty] - stdout | stderr
+ * @param {boolean} [options.loading] - loading
  * @param { 'pipe'| 'inherit' | 'ignore' | 'overlapped' } [options.stdio] - stdio option for execa (default: pipe)
  * @returns {Promise<string>}
  */
@@ -15,10 +16,14 @@ export async function $ (command, options) {
   options = options || {}
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
   options.returnProperty = options.returnProperty || 'stdout'
+  options.loading = typeof options.loading === 'boolean' ? options.loading : true
 
   const spinner = ora()
   spinner.text = command
-  spinner.start()
+
+  if (options.loading) {
+    spinner.start()
+  }
 
   const result = await exec(command, {
     cleanup: true,
