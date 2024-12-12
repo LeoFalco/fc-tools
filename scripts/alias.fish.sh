@@ -1,6 +1,6 @@
 function field
   nvm use (cat ~/.fc-tools/.nvmrc) >> /dev/null
-  node --trace-deprecation ~/.fc-tools $argv
+  node --no-deprecation ~/.fc-tools $argv
   nvm use &> /dev/null
 end
 

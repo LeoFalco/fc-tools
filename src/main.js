@@ -45,3 +45,5 @@ function formatErrorMessage (error) {
 function isDebug () {
   return Boolean(process.env.DEBUG)
 }
+
+run()

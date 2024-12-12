@@ -8,6 +8,7 @@
     "field": "src/index.js"
   },
   "scripts": {
+    "update": "rm update-check.txt && node src/commands/check-update.js",
     "test": "node --test test/**/*.spec.js",
     "lint": "npx eslint . --cache",
     "lint:fix": "npx eslint . --fix --cache",

@@ -82,21 +82,10 @@ class PrOpenedCommand {
     })
 
     for (const pull of pulls) {
-      if (pull.approved) {
-        pull.missingReviewers = []
-        continue
-      }
-
+      if (pull.approved) continue
       const teamReviewers = TEAMS[team].filter((login) => login !== pull.author.login)
       const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author.login)
-
       const missingReviewers = teamReviewers.filter((login) => !approvedReviewers.includes(login))
-
-      console.log('Author:', pull.author.login)
-      console.log('Team Reviewers:', teamReviewers)
-      console.log('Missing Reviewers:', missingReviewers)
-      console.log('Approved Reviewers:', approvedReviewers)
-      console.log('---')
       pull.missingReviewers = missingReviewers
     }
 
@@ -134,7 +123,7 @@ class PrOpenedCommand {
 
     for (const teamMember of teamMembers) {
       const prsWithoutMemberApproval = pulls
-        .filter((pull) => pull.missingReviewers.includes(teamMember))
+        .filter((pull) => pull.missingReviewers?.includes(teamMember))
         .filter((pull) => !pull.approved)
         .filter((pull) => pull.notRejected)
         .filter((pull) => pull.mergeable)
