@@ -5,8 +5,6 @@ import { dirname } from 'node:path'
 async function run () {
   const CURRENT_DIR = dirname(fileURLToPath(import.meta.url))
 
-  console.log('Current directory:', CURRENT_DIR)
-
   await $(`node ${CURRENT_DIR}/update.js`, {
     stdio: 'inherit',
     loading: false
