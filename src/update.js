@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
-import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs'
 import inquirer from 'inquirer'
 import { dirname, join } from 'path'
 
@@ -66,7 +66,10 @@ function isUpdateCheckedToday () {
 
 function markUpdateCheckedToday () {
   const today = new Date().toISOString().split('T').shift()
-  writeFileSync(UPDATE_FILE_FULL_PATH, today)
+  const dir = dirname(UPDATE_FILE_FULL_PATH)
+
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(UPDATE_FILE_FULL_PATH, today, { encoding: 'utf-8' })
 }
 
 const currentFileName = fileURLToPath(import.meta.url)
