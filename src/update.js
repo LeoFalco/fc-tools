@@ -2,6 +2,12 @@ import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import { writeFileSync, readFileSync, existsSync } from 'fs'
 import inquirer from 'inquirer'
+import { dirname, join } from 'path'
+
+const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))
+const LAST_UPDATE_FILE_PATH = join(CURRENT_DIR_NAME, '../../data/last-update.txt')
+const LAST_UPDATE_FOLDER_PATH = dirname(LAST_UPDATE_FILE_PATH)
+const UPDATE_FILE_FULL_PATH = join(LAST_UPDATE_FOLDER_PATH, 'update-check.txt')
 
 async function checkUpdate () {
   if (isUpdateCheckedToday()) return
@@ -47,11 +53,11 @@ function exec (command, options) {
 function isUpdateCheckedToday () {
   const today = new Date().toISOString().split('T').shift()
 
-  if (!existsSync('update-check.txt')) {
+  if (!existsSync(UPDATE_FILE_FULL_PATH)) {
     return false
   }
 
-  const lastUpdateCheck = readFileSync('update-check.txt', {
+  const lastUpdateCheck = readFileSync(UPDATE_FILE_FULL_PATH, {
     encoding: 'utf-8',
     flag: 'a+'
   })
@@ -60,7 +66,7 @@ function isUpdateCheckedToday () {
 
 function markUpdateCheckedToday () {
   const today = new Date().toISOString().split('T').shift()
-  writeFileSync('update-check.txt', today)
+  writeFileSync(UPDATE_FILE_FULL_PATH, today)
 }
 
 const currentFileName = fileURLToPath(import.meta.url)
