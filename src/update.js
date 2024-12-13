@@ -34,8 +34,12 @@ async function checkUpdate () {
   console.log('Updating...')
 
   try {
-    exec('git reset --hard HEAD~1')
-    exec('git pull origin master', { stdio: 'pipe' })
+    exec('git reset --hard HEAD~1', {
+      cwd: CURRENT_DIR_NAME
+    })
+    exec('git pull origin master', {
+      cwd: CURRENT_DIR_NAME
+    })
   } catch (error) {
     console.error(`Error on installing update\n${error.stderr.toString().trim()}`)
 
