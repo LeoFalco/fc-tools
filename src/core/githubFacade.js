@@ -2,6 +2,55 @@
 
 import { octokit } from './octokit.js'
 
+const GET_PULL_REQUESTS = `#graphql
+      query listPullRequests($organization: String!, $repository: String!, $number: Int!) {
+        viewer {
+          organization(login: $organization) {
+            repository(name: $repository) {
+              id
+              name
+              pullRequest(number: $number) {
+                id
+                url
+                number
+                mergedAt
+                mergeable
+                createdAt
+                state
+                title
+                isDraft
+                reviewDecision
+                repository {
+                  name
+                }
+                author {
+                  login
+                }
+                labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
+                  nodes {
+                    name
+                  }
+                }
+                reviews(first: 10, states: [APPROVED, CHANGES_REQUESTED]) {
+                  nodes {
+                    state
+                    author {
+                      login
+                    }
+                  }
+                }
+                headRef {
+                  target {
+                    oid
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `
+
 class GithubFacade {
   /**
    *
@@ -136,55 +185,6 @@ class GithubFacade {
    * @returns
    */
   async listOpenPullRequests (params) {
-    const GET_PULL_REQUESTS = `#graphql
-      query listPullRequests($organization: String!, $repository: String!, $number: Int!) {
-        viewer {
-          organization(login: $organization) {
-            repository(name: $repository) {
-              id
-              name
-              pullRequest(number: $number) {
-                id
-                url
-                number
-                mergedAt
-                mergeable
-                createdAt
-                state
-                title
-                isDraft
-                reviewDecision
-                repository {
-                  name
-                }
-                author {
-                  login
-                }
-                labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
-                  nodes {
-                    name
-                  }
-                }
-                reviews(first: 10, states: [APPROVED, CHANGES_REQUESTED]) {
-                  nodes {
-                    state
-                    author {
-                      login
-                    }
-                  }
-                }
-                headRef {
-                  target {
-                    oid
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `
-
     const repositoryNames = await octokit.rest.repos.listForOrg({
       org: params.organization,
       sort: 'updated',
@@ -245,6 +245,62 @@ class GithubFacade {
         return runs.filter((run) => !run.head_commit?.committer?.email?.startsWith('fieldney@'))
       })
       .then((runs) => runs[0])
+  }
+
+  /**
+   *
+   * @param {object} params
+   * @param {string} params.organization
+   * @param {string[]} params.assignees
+   * @returns
+   */
+  async listOpenPullRequestsV2 (params) {
+    const searchPromises = params.assignees.map(async (assignee) => {
+      console.log(`consultando pull requests de ${assignee}`)
+      return octokit.rest.search.issuesAndPullRequests({ q: `is:pr is:open org:${params.organization} author:${assignee}` })
+        .then((response) => {
+          console.log(`Encontrado ${response.data.items.length} pull requests de ${assignee}`)
+          return response
+        })
+    })
+
+    const searchResults = await Promise.all(searchPromises)
+
+    const pulls = []
+    for (const { data: { items } } of searchResults) {
+      for (const pr of items) {
+        const url = pr.url
+        const regexToExtractNumberAndRepo = /https:\/\/api\.github\.com\/repos\/FieldControl\/([a-z-_\d]+)\/issues\/(\d+)/
+        console.log('pr', url)
+        const [, repo, number] = url.match(regexToExtractNumberAndRepo) || []
+
+        pulls.push({
+          number: parseInt(number),
+          repo,
+          url
+        })
+      }
+    }
+
+    return Promise.all(
+      pulls.map(async (pull) => {
+        console.log(`consultando pull request ${pull.repo}/${pull.number}`)
+        return octokit.graphql(GET_PULL_REQUESTS, {
+          organization: params.organization,
+          repository: pull.repo,
+          number: pull.number
+        }).then((response) => response.viewer.organization.repository.pullRequest)
+      })
+    ).then((pulls) => {
+      return Promise.all(
+        pulls.map(async (pull) => {
+          Object.assign(pull, {
+            checks: pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
+          })
+          return pull
+        })
+      )
+    })
   }
 }
 
