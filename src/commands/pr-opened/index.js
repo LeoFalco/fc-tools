@@ -77,8 +77,6 @@ class PrOpenedCommand {
       pull.readyForTest = pull.approved && pull.checks && pull.ready
 
       console.log('pull.deployments:', pull.deployments)
-
-    // pull.deploymentUrls = pull.deployments.nodes.map((deployment) => deployment.statuses.nodes.map((status) => status.environmentUrl)).flat()
     })
 
     for (const pull of pulls) {
@@ -109,10 +107,6 @@ class PrOpenedCommand {
             formatTitle(title)
           ].join(' ')
         )
-
-      // if (pull.deploymentUrls.length > 0) {
-      //   console.log('Deployments:', pull.deploymentUrls.join(', '))
-      // }
       })
 
     const { true: approved, false: rejected } = groupBy(pulls, (pull) => {
