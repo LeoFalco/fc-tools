@@ -11,7 +11,7 @@ class PrMergeCommand {
    * */
   install ({ program }) {
     program
-      .command('pr-merge')
+      .command('merge')
       .description('merge pull request')
       .action(this.action.bind(this))
   }
