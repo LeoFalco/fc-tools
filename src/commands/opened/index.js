@@ -118,11 +118,14 @@ class PrOpenedCommand {
         .filter((pull) => pull.checks)
         .filter((pull) => pull.ready)
 
+      const prsWithMemberApprovalCount = pulls.filter((pull) => !pull.missingReviewers?.includes(teamMember)).length
+
       console.log('')
+      console.log(`Prs com review de ${teamMember}`, prsWithMemberApprovalCount)
       console.log(`PRs com review pendente de ${teamMember}`)
 
       if (prsWithoutMemberApproval.length === 0) {
-        console.log(red('Nenhum pr com review pendente'))
+        console.log(chalk.green('Nenhum pr com review pendente'))
       } else {
         console.log(chalkTable({
           columns: [
