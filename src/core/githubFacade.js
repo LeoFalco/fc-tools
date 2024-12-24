@@ -258,7 +258,7 @@ class GithubFacade {
 
 function isAutorInSelectedAssigneeList (pull, selectedAssignees) {
   return selectedAssignees.some((login) => {
-    return (pull.author && login === pull.author.login) || (pull.user && login === pull.user.login)
+    return (pull.author && login === pull.author?.login) || (pull.user && login === pull.user.login)
   })
 }
 

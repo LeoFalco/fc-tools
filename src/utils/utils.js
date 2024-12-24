@@ -25,7 +25,7 @@ export function isMerged (pull) {
 
 export function isQualityOk (pull, qualityUsers) {
   return pull.reviews.nodes.some((review) => {
-    return review.author && qualityUsers.includes(review.author.login) && review.state === 'APPROVED'
+    return review.author && qualityUsers.includes(review.author?.login) && review.state === 'APPROVED'
   })
 }
 

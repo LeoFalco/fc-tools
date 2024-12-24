@@ -69,8 +69,8 @@ class PrOpenedCommand {
           pull.quality = quality
           pull.age = age
 
-          const teamReviewers = TEAMS[team].filter((login) => login !== pull.author.login)
-          const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author.login)
+          const teamReviewers = TEAMS[team].filter((login) => login !== pull.author?.login)
+          const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author?.login)
           const missingReviewers = teamReviewers.filter((login) => !approvedReviewers.includes(login))
           pull.missingReviewers = missingReviewers
           return pull
@@ -102,7 +102,7 @@ class PrOpenedCommand {
         notRejected: pull.notRejected ? chalk.green('✓') : chalk.red('✕'),
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
-        author: pull.author.login,
+        author: pull.author?.login,
         title: formatTitle(pull.title)
       }
     })))
@@ -136,7 +136,7 @@ class PrOpenedCommand {
         }, prsWithoutMemberApproval.map((pull) => {
           return {
             link: pull.url,
-            author: pull.author.login,
+            author: pull.author?.login,
             title: formatTitle(pull.title)
           }
         })))
