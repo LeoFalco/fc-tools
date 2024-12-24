@@ -6,7 +6,10 @@ const CMMS_PROJECT_TEAM_MEMBERS = [
   'tauk7'
 ]
 
-const CMMS_MAINTENANCE_TEAM_MEMBERS = ['pedroaugusto2002', 'VBDomingos']
+const CMMS_MAINTENANCE_TEAM_MEMBERS = [
+  'pedroaugusto2002',
+  'VBDomingos'
+]
 
 const FSM_PROJECT_TEAM_MEMBERS = ['caiorsantanna', 'PedroHenriqueGazola']
 

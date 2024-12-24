@@ -1,13 +1,13 @@
 // @ts-check
 
 import inquirer from 'inquirer'
-import { chain, groupBy, map, mean, sum } from 'lodash-es'
-import { oraPromise } from 'ora'
+import { chain, map, mean, sum } from 'lodash-es'
 import { TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
 import { calcAge, formatTitle, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected, padEnd, red } from '../../utils/utils.js'
-
+import chalkTable from 'chalk-table'
+import chalk from 'chalk'
 class PrOpenedCommand {
   /**
    *
@@ -17,7 +17,7 @@ class PrOpenedCommand {
    * */
   install ({ program }) {
     program
-      .command('pr-opened')
+      .command('opened')
       .description('list open pull requests')
       .action(this.action.bind(this))
   }
@@ -49,64 +49,63 @@ class PrOpenedCommand {
     const pulls = await githubFacade.listOpenPullRequestsV2({
       assignees,
       organization: 'FieldControl'
+    }).then((pulls) => {
+      return chain(pulls)
+        .map((pull) => {
+          const approved = isApproved(pull)
+          const notRejected = !isRejected(pull)
+          const mergeable = isMergeable(pull)
+          const checks = isChecksPassed(pull)
+          const quality = isQualityOk(pull, qualityUsers) || hasPublishLabel(pull)
+          const ready = isReady(pull)
+          const age = calcAge(pull)
+
+          pull.score = sum([approved, mergeable, checks, quality, ready].map((param) => (param ? 1 : 0)))
+          pull.approved = approved
+          pull.notRejected = notRejected
+          pull.mergeable = mergeable
+          pull.checks = checks
+          pull.ready = ready
+          pull.quality = quality
+          pull.age = age
+
+          const teamReviewers = TEAMS[team].filter((login) => login !== pull.author.login)
+          const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author.login)
+          const missingReviewers = teamReviewers.filter((login) => !approvedReviewers.includes(login))
+          pull.missingReviewers = missingReviewers
+          return pull
+        })
+        .sortBy((pull) => pull.score)
+        .reverse()
+        .value()
     })
 
-    pulls.forEach((pull) => {
-      const approved = isApproved(pull)
-      const notRejected = !isRejected(pull)
-      const mergeable = isMergeable(pull)
-      const checks = isChecksPassed(pull)
-      const quality = isQualityOk(pull, qualityUsers) || hasPublishLabel(pull)
-      const ready = isReady(pull)
-      const age = calcAge(pull)
-
-      pull.score = sum([approved, mergeable, checks, quality, ready].map((param) => (param ? 1 : 0)))
-      pull.approved = approved
-      pull.notRejected = notRejected
-      pull.mergeable = mergeable
-      pull.checks = checks
-      pull.ready = ready
-      pull.quality = quality
-      pull.age = age
-
-      pull.readyForTest = pull.approved && pull.checks && pull.ready
-
-      console.log('pull.deployments:', pull.deployments)
-    })
-
-    for (const pull of pulls) {
-      if (pull.approved) continue
-      const teamReviewers = TEAMS[team].filter((login) => login !== pull.author.login)
-      const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author.login)
-      const missingReviewers = teamReviewers.filter((login) => !approvedReviewers.includes(login))
-      pull.missingReviewers = missingReviewers
-    }
-
-    chain(pulls)
-      .sortBy((pull) => pull.score)
-      .reverse()
-      .value()
-      .forEach((pull) => {
-        const { approved, notRejected, mergeable, checks, ready, url, author, title, quality } = pull
-
-        console.log(
-          [
-            red({ ready }),
-            red({ merge: mergeable }),
-            red({ check: checks }),
-            red({ review: approved }),
-            red({ notRejected }),
-            red({ qa: quality }),
-            padEnd(author.login, 15),
-            padEnd(url, 60),
-            formatTitle(title)
-          ].join(' ')
-        )
-      })
-
-    const { true: approved, false: rejected } = groupBy(pulls, (pull) => {
-      return pull.approved && pull.mergeable && pull.checks && pull.ready && pull.quality
-    })
+    console.log('')
+    console.log(chalkTable({
+      columns: [
+        { field: 'ready', name: chalk.cyan('Draft') },
+        { field: 'mergeable', name: chalk.cyan('Mergeable') },
+        { field: 'checks', name: chalk.cyan('Checks') },
+        { field: 'review', name: chalk.cyan('Review') },
+        { field: 'notRejected', name: chalk.cyan('Approved') },
+        { field: 'quality', name: chalk.cyan('Quality') },
+        { field: 'author', name: chalk.cyan('Author') },
+        { field: 'link', name: chalk.cyan('Link') },
+        { field: 'title', name: chalk.cyan('Title') }
+      ]
+    }, pulls.map((pull) => {
+      return {
+        ready: pull.ready ? chalk.green('✓') : chalk.red('✕'),
+        mergeable: pull.mergeable ? chalk.green('✓') : chalk.red('✕'),
+        checks: pull.checks ? chalk.green('✓') : chalk.red('✕'),
+        review: pull.approved ? chalk.green('✓') : chalk.red('✕'),
+        notRejected: pull.notRejected ? chalk.green('✓') : chalk.red('✕'),
+        quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
+        link: pull.url,
+        author: pull.author.login,
+        title: formatTitle(pull.title)
+      }
+    })))
 
     const teamMembers = TEAMS[team]
 
@@ -138,8 +137,6 @@ class PrOpenedCommand {
 
     console.log('')
     console.log('Quantidade de prs abertos: ', pulls.length.toFixed(0))
-    console.log('Quantidade de prs prontos para publicar: ', (approved?.length || 0).toFixed(0))
-    console.log('Quantidade de prs que precisam de atenção: ', (rejected?.length || 0).toFixed(0))
     console.log('Idade média: ' + mean(map(pulls, (pull) => pull.age)).toFixed(0) + ' dias corridos')
     console.log('Cada autor tem a responsabilidade zelar pelo seu pr até que ele seja publicado')
     console.log('Oque fazer em cada caso:')
