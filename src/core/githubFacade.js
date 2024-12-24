@@ -178,55 +178,6 @@ class GithubFacade {
   }
 
   /**
-   *
-   * @param {object} params
-   * @param {string} params.organization
-   * @param {string[]} params.assignees
-   * @returns
-   */
-  async listOpenPullRequests (params) {
-    const repositoryNames = await octokit.rest.repos.listForOrg({
-      org: params.organization,
-      sort: 'updated',
-      per_page: 50
-    }).then((response) => response.data.filter(repo => !repo.fork && !repo.archived).map((repo) => repo.name))
-
-    return await Promise.all(
-      repositoryNames.map(async (repo) => {
-        return await octokit.rest.pulls.list({
-          owner: params.organization,
-          repo,
-          state: 'open',
-          sort: 'updated',
-          per_page: 50
-        })
-      })
-    ).then((response) => response.map((response) => response.data).flat().flat())
-      .then((pulls) => pulls.filter((pull) => isAutorInSelectedAssigneeList(pull, params.assignees)))
-      .then((pulls) => {
-        return Promise.all(
-          pulls.map(async (pull) => {
-            return octokit.graphql(GET_PULL_REQUESTS, {
-              organization: params.organization,
-              repository: pull.base.repo.name,
-              number: pull.number
-            }).then((response) => response.viewer.organization.repository.pullRequest)
-          })
-        )
-      })
-      .then((pulls) => {
-        return Promise.all(
-          pulls.map(async (pull) => {
-            Object.assign(pull, {
-              checks: pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
-            })
-            return pull
-          })
-        )
-      })
-  }
-
-  /**
    * @param {object} params
    * @param {string} params.owner
    * @param {string} params.repo
@@ -284,7 +235,7 @@ class GithubFacade {
 
     return Promise.all(
       pulls.map(async (pull) => {
-        console.log(`consultando pull request ${pull.repo}/${pull.number}`)
+        console.log(`consultando pull request ${pull.url}`)
         return octokit.graphql(GET_PULL_REQUESTS, {
           organization: params.organization,
           repository: pull.repo,
@@ -294,6 +245,7 @@ class GithubFacade {
     ).then((pulls) => {
       return Promise.all(
         pulls.map(async (pull) => {
+          console.log(`consultando checks do pull request ${pull.url}`)
           Object.assign(pull, {
             checks: pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
           })

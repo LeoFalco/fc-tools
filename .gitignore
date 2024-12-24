@@ -23,4 +23,4 @@ typings/
 .env.test
 .cache
 
-update-check.txt
+data

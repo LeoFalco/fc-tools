@@ -83,15 +83,15 @@ class PrOpenedCommand {
     console.log('')
     console.log(chalkTable({
       columns: [
+        { field: 'link', name: chalk.cyan('Link') },
+        { field: 'title', name: chalk.cyan('Title') },
+        { field: 'author', name: chalk.cyan('Author') },
         { field: 'ready', name: chalk.cyan('Draft') },
         { field: 'mergeable', name: chalk.cyan('Mergeable') },
         { field: 'checks', name: chalk.cyan('Checks') },
         { field: 'review', name: chalk.cyan('Review') },
         { field: 'notRejected', name: chalk.cyan('Approved') },
-        { field: 'quality', name: chalk.cyan('Quality') },
-        { field: 'author', name: chalk.cyan('Author') },
-        { field: 'link', name: chalk.cyan('Link') },
-        { field: 'title', name: chalk.cyan('Title') }
+        { field: 'quality', name: chalk.cyan('Quality') }
       ]
     }, pulls.map((pull) => {
       return {
@@ -118,21 +118,26 @@ class PrOpenedCommand {
         .filter((pull) => pull.checks)
         .filter((pull) => pull.ready)
 
-      if (prsWithoutMemberApproval.length === 0) continue
       console.log('')
       console.log(`PRs com review pendente de ${teamMember}`)
-      prsWithoutMemberApproval.slice(0, 5).forEach((pull) => {
-        const { approved, url, author, title } = pull
 
-        console.log(
-          [
-            red({ review: approved }),
-            padEnd(author.login, 15),
-            padEnd(url, 60),
-            formatTitle(title)
-          ].join(' ')
-        )
-      })
+      if (prsWithoutMemberApproval.length === 0) {
+        console.log(red('Nenhum pr com review pendente'))
+      } else {
+        console.log(chalkTable({
+          columns: [
+            { field: 'link', name: chalk.cyan('Link') },
+            { field: 'title', name: chalk.cyan('Title') },
+            { field: 'author', name: chalk.cyan('Author') }
+          ]
+        }, prsWithoutMemberApproval.map((pull) => {
+          return {
+            link: pull.url,
+            author: pull.author.login,
+            title: formatTitle(pull.title)
+          }
+        })))
+      }
     }
 
     console.log('')
