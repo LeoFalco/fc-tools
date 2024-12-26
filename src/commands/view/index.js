@@ -33,7 +33,7 @@ class PreviewCommand {
 
   async fetchDeployInfo ({ currentCommitSha, owner, repo }) {
     // gh api "https://api.github.com/repos/FieldControl/mountdoom/deployments?sha=826e5894db026d285be05748cdcfb848328033e6"
-    const deployData = await $(`gh api https://api.github.com/repos/${owner}/${repo}/deployments\?sha=${currentCommitSha}`)
+    const deployData = await $(`gh api https://api.github.com/repos/${owner}/${repo}/deployments?sha=${currentCommitSha}`)
       .then(JSON.parse)
 
     const deploymentId = deployData[0]?.id
