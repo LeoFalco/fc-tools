@@ -20,7 +20,10 @@ class PrMergeCommand {
    * @param {Object} options
    */
   async action (options) {
-    await $('gh pr merge -d -r --admin', {})
+    const currentBranch = await $('git branch --show-current')
+    await $('gh pr merge -d -r --admin')
+    await $(`git branch -D ${currentBranch}`, { reject: false })
+    await $('git remote prune origin')
 
     console.log('PR merged successfully')
   }
