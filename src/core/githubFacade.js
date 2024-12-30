@@ -52,6 +52,10 @@ const GET_PULL_REQUESTS = `#graphql
     `
 
 class GithubFacade {
+  async getCurrentUser () {
+    return await octokit.rest.users.getAuthenticated()
+  }
+
   /**
    *
    * @param {object} params

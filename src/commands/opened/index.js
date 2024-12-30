@@ -81,6 +81,7 @@ class PrOpenedCommand {
     })
 
     console.log('')
+    console.log('PRs abertos')
     console.log(chalkTable({
       columns: [
         { field: 'link', name: chalk.cyan('Link') },
@@ -94,6 +95,36 @@ class PrOpenedCommand {
         { field: 'quality', name: chalk.cyan('Quality') }
       ]
     }, pulls.map((pull) => {
+      return {
+        ready: pull.ready ? chalk.green('✓') : chalk.red('✕'),
+        mergeable: pull.mergeable ? chalk.green('✓') : chalk.red('✕'),
+        checks: pull.checks ? chalk.green('✓') : chalk.red('✕'),
+        review: pull.approved ? chalk.green('✓') : chalk.red('✕'),
+        notRejected: pull.notRejected ? chalk.green('✓') : chalk.red('✕'),
+        quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
+        link: pull.url,
+        author: pull.author?.login,
+        title: formatTitle(pull.title)
+      }
+    })))
+
+    const currentUser = await githubFacade.getCurrentUser()
+
+    const myPulls = pulls.filter((pull) => pull.author?.login === currentUser.data.login)
+    console.log('')
+    console.log('Meus PRs')
+    console.log(chalkTable({
+      columns: [
+        { field: 'link', name: chalk.cyan('Link') },
+        { field: 'title', name: chalk.cyan('Title') },
+        { field: 'ready', name: chalk.cyan('Draft') },
+        { field: 'mergeable', name: chalk.cyan('Mergeable') },
+        { field: 'checks', name: chalk.cyan('Checks') },
+        { field: 'review', name: chalk.cyan('Review') },
+        { field: 'notRejected', name: chalk.cyan('Approved') },
+        { field: 'quality', name: chalk.cyan('Quality') }
+      ]
+    }, myPulls.map((pull) => {
       return {
         ready: pull.ready ? chalk.green('✓') : chalk.red('✕'),
         mergeable: pull.mergeable ? chalk.green('✓') : chalk.red('✕'),
@@ -124,23 +155,19 @@ class PrOpenedCommand {
       console.log(`Prs com review de ${teamMember}`, prsWithMemberApprovalCount)
       console.log(`PRs com review pendente de ${teamMember}`)
 
-      if (prsWithoutMemberApproval.length === 0) {
-        console.log(chalk.green('Nenhum pr com review pendente'))
-      } else {
-        console.log(chalkTable({
-          columns: [
-            { field: 'link', name: chalk.cyan('Link') },
-            { field: 'title', name: chalk.cyan('Title') },
-            { field: 'author', name: chalk.cyan('Author') }
-          ]
-        }, prsWithoutMemberApproval.map((pull) => {
-          return {
-            link: pull.url,
-            author: pull.author?.login,
-            title: formatTitle(pull.title)
-          }
-        })))
-      }
+      console.log(chalkTable({
+        columns: [
+          { field: 'link', name: chalk.cyan('Link') },
+          { field: 'title', name: chalk.cyan('Title') },
+          { field: 'author', name: chalk.cyan('Author') }
+        ]
+      }, prsWithoutMemberApproval.map((pull) => {
+        return {
+          link: pull.url,
+          author: pull.author?.login,
+          title: formatTitle(pull.title)
+        }
+      })))
     }
 
     console.log('')
