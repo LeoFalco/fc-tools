@@ -3,7 +3,9 @@ import { concat } from 'lodash-es'
 const CMMS_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
   'willaug',
-  'tauk7'
+  'tauk7',
+  'cesarfield',
+  'guilherme-carmona'
 ]
 
 const CMMS_MAINTENANCE_TEAM_MEMBERS = [
@@ -11,15 +13,22 @@ const CMMS_MAINTENANCE_TEAM_MEMBERS = [
   'VBDomingos'
 ]
 
-const FSM_PROJECT_TEAM_MEMBERS = ['caiorsantanna', 'PedroHenriqueGazola']
+const FSM_PROJECT_TEAM_MEMBERS = [
+  'caiorsantanna',
+  'PedroHenriqueGazola',
+  'matheusjurkovich'
+]
 
 const FSM_MAINTENANCE_TEAM_MEMBERS = [
   'Carlos-F-Braga',
-  'cesarfield',
   'gabrieel1007',
-  'JorgeCJ',
-  'matheusjurkovich',
   'rafaelcaniello'
+]
+
+const QUALITY_TEAM = [
+  'viniciusfantoli',
+  'panegace',
+  'giovanalmeida2'
 ]
 
 const TEAMS = {
@@ -32,4 +41,7 @@ const TEAMS = {
   'FSM Sustentação': FSM_MAINTENANCE_TEAM_MEMBERS
 }
 
-export { TEAMS }
+export {
+  TEAMS,
+  QUALITY_TEAM
+}

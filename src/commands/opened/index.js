@@ -1,13 +1,14 @@
 // @ts-check
 
+import chalk from 'chalk'
+import chalkTable from 'chalk-table'
 import inquirer from 'inquirer'
 import { chain, map, mean, sum } from 'lodash-es'
-import { TEAMS } from '../../core/constants.js'
+import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
-import { calcAge, formatTitle, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected, padEnd, red } from '../../utils/utils.js'
-import chalkTable from 'chalk-table'
-import chalk from 'chalk'
+import { calcAge, formatTitle, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+
 class PrOpenedCommand {
   /**
    *
@@ -41,10 +42,7 @@ class PrOpenedCommand {
     const assignees = TEAMS[team]
 
     console.log('Membros selecionados:', assignees.join(', '))
-
-    const qualityUsers = ['viniciusfantoli', 'panegace']
-
-    console.log('Membros de qualidade:', qualityUsers.join(', '))
+    console.log('Membros de qualidade:', QUALITY_TEAM.join(', '))
 
     const pulls = await githubFacade.listOpenPullRequestsV2({
       assignees,
@@ -56,7 +54,7 @@ class PrOpenedCommand {
           const notRejected = !isRejected(pull)
           const mergeable = isMergeable(pull)
           const checks = isChecksPassed(pull)
-          const quality = isQualityOk(pull, qualityUsers) || hasPublishLabel(pull)
+          const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
           const ready = isReady(pull)
           const age = calcAge(pull)
 
