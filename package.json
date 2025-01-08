@@ -48,7 +48,7 @@
     "inquirer": "12.3.0",
     "lodash-es": "4.17.21",
     "node-notifier": "10.0.1",
-    "octokit": "4.0.3",
+    "octokit": "4.1.0",
     "open": "10.1.0",
     "openai": "4.77.3",
     "ora": "8.1.1",
