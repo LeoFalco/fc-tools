@@ -42,6 +42,7 @@
     "chalk-table": "1.0.2",
     "commander": "13.0.0",
     "date-fns": "4.1.0",
+    "date-fns-tz": "3.2.0",
     "dotenv": "16.4.7",
     "execa": "9.5.2",
     "inquirer": "12.3.1",

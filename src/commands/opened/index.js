@@ -46,7 +46,8 @@ class PrOpenedCommand {
 
     const pulls = await githubFacade.listOpenPullRequestsV2({
       assignees,
-      organization: 'FieldControl'
+      organization: 'FieldControl',
+      state: 'OPEN'
     }).then((pulls) => {
       return chain(pulls)
         .map((pull) => {

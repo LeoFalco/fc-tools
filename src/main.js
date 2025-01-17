@@ -14,9 +14,7 @@ export async function run () {
     await program.parseAsync()
   } catch (err) {
     error(formatErrorMessage(err))
-    if (isDebug()) {
-      error(err.stack)
-    }
+    error(err.stack)
     process.exitCode = 1
   }
 }
