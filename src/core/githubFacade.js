@@ -65,71 +65,6 @@ class GithubFacade {
    * @returns
    */
   async listPullRequests (params) {
-    const LIST_PULL_REQUESTS = `#graphql
-      query listPullRequests($organization: String!, $states: [PullRequestState!]) {
-        viewer {
-          organization(login: $organization) {
-            repositories(first: 50, isLocked: false, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
-              nodes {
-                id
-                name
-                pullRequests(first: 10, states: $states, orderBy: { field: CREATED_AT, direction: ASC }) {
-                  nodes {
-                    id
-                    url
-                    number
-                    mergedAt
-                    mergeable
-                    createdAt
-                    state
-                    title
-                    isDraft
-                    reviewDecision
-                    repository {
-                      name
-                    }
-                    author {
-                      login
-                    }
-                    labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
-                      nodes {
-                        name
-                      }
-                    }
-                    reviews(first: 20, states: [APPROVED, CHANGES_REQUESTED]) {
-                      nodes {
-                        state
-                        author {
-                          login
-                        }
-                      }
-                    }
-                    deployments(first: 2) {
-                      nodes {
-                        statuses(first: 1) {
-                          nodes {
-                            state
-                            environmentUrl
-                            logUrl
-                            updatedAt
-                          }
-                        }
-                      }
-                    }
-                    headRef {
-                      target {
-                        oid
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `
-
     const LIST_MERGED_PULL_REQUESTS = `#graphql
       query listPullRequests($organization: String!, $states: [PullRequestState!]) {
         viewer {
@@ -163,7 +98,7 @@ class GithubFacade {
       }
     `
 
-    const data = await octokit.graphql(params.state === 'MERGED' ? LIST_MERGED_PULL_REQUESTS : LIST_PULL_REQUESTS, {
+    const data = await octokit.graphql(LIST_MERGED_PULL_REQUESTS, {
       organization: params.organization,
       states: [params.state]
     })
@@ -207,12 +142,17 @@ class GithubFacade {
    * @param {object} params
    * @param {string} params.organization
    * @param {string[]} params.assignees
+   * @param {string} params.state - 'OPEN' or 'CLOSED'
    * @returns
    */
   async listOpenPullRequestsV2 (params) {
     const searchPromises = params.assignees.map(async (assignee) => {
       console.log(`consultando pull requests de ${assignee}`)
-      return octokit.rest.search.issuesAndPullRequests({ q: `is:pr is:open org:${params.organization} author:${assignee}` })
+      return octokit.rest.search.issuesAndPullRequests({
+        q: `is:pr is:${params.state.toLowerCase()} org:${params.organization} author:${assignee}`,
+        page: 1,
+        per_page: 30
+      })
         .then((response) => {
           console.log(`Encontrado ${response.data.items.length} pull requests de ${assignee}`)
           return response
@@ -220,6 +160,10 @@ class GithubFacade {
     })
 
     const searchResults = await Promise.all(searchPromises)
+
+    if (params.state === 'MERGED') {
+      return searchResults.map(({ data: { items } }) => items).flat()
+    }
 
     const pulls = []
     for (const { data: { items } } of searchResults) {
