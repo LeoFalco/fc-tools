@@ -95,7 +95,7 @@ class PrMergedCommand {
       return {
         mergedAt: pull.mergedAt,
         link: pull.html_url,
-        title: formatTitle(pull.title),
+        title: pull.title,
         author: pull.user.login
       }
     })))

@@ -103,7 +103,7 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
-        title: formatTitle(pull.title)
+        title: pull.title
       }
     })))
 
@@ -133,7 +133,7 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
-        title: formatTitle(pull.title)
+        title: pull.title
       }
     })))
 
@@ -164,7 +164,7 @@ class PrOpenedCommand {
         return {
           link: pull.url,
           author: pull.author?.login,
-          title: formatTitle(pull.title)
+          title: pull.title
         }
       })))
     }
