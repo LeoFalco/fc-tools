@@ -7,7 +7,7 @@ import { chain, map, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
-import { calcAge, formatTitle, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 
 class PrOpenedCommand {
   /**
@@ -91,7 +91,8 @@ class PrOpenedCommand {
         { field: 'checks', name: chalk.cyan('Checks') },
         { field: 'review', name: chalk.cyan('Review') },
         { field: 'notRejected', name: chalk.cyan('Approved') },
-        { field: 'quality', name: chalk.cyan('Quality') }
+        { field: 'quality', name: chalk.cyan('Quality') },
+        { field: 'team', name: chalk.cyan('Team') }
       ]
     }, pulls.map((pull) => {
       return {
@@ -103,7 +104,8 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
-        title: pull.title
+        title: pull.title,
+        team: getTeamByAssignee(pull.author?.login)
       }
     })))
 

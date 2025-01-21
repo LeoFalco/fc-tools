@@ -1,5 +1,6 @@
 import { Chalk } from 'chalk'
 import { differenceInDays, parseISO } from 'date-fns'
+import { TEAMS } from '../core/constants.js'
 
 export const chalk = new Chalk()
 
@@ -102,4 +103,16 @@ export function coloredConclusion (conclusion) {
     default:
       return chalk.blue(conclusion)
   }
+}
+
+/**
+ * @param {string} assignee
+ */
+export function getTeamByAssignee (assignee) {
+  for (const item of Object.keys(TEAMS)) {
+    if (item === 'TODOS' || item === 'CMMS' || item === 'FSM') continue
+    if (TEAMS[item].includes(assignee)) return item
+  }
+
+  return 'UNKNOWN'
 }

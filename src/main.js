@@ -40,8 +40,4 @@ function formatErrorMessage (error) {
     .join('\n')
 }
 
-function isDebug () {
-  return Boolean(process.env.DEBUG)
-}
-
 run()

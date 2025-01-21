@@ -2,14 +2,14 @@
 
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
-import inquirer from 'inquirer'
-import { chain, map, mean, sum } from 'lodash-es'
-import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
-import { githubFacade } from '../../core/githubFacade.js'
-import { dateFilter, dateValidator, notNullValidator } from '../../core/validators.js'
-import { calcAge, coloredConclusion, coloredStatus, formatTitle, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import { format, parseISO } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
+import inquirer from 'inquirer'
+import { chain } from 'lodash-es'
+import { TEAMS } from '../../core/constants.js'
+import { githubFacade } from '../../core/githubFacade.js'
+import { dateFilter, dateValidator, notNullValidator } from '../../core/validators.js'
+import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
 
 class PrMergedCommand {
   /**
@@ -30,7 +30,6 @@ class PrMergedCommand {
    * @param {boolean | undefined} options.generate
    */
   async action (options) {
-    // @ts-ignore
     // @ts-ignore
     const { startDate, endDate, team } = await inquirer.prompt([
       {
@@ -80,23 +79,26 @@ class PrMergedCommand {
 
     for (const pull of pulls) {
       pull.mergedAt = format(toZonedTime(parseISO(pull.pull_request.merged_at), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
+      pull.team = getTeamByAssignee(pull.assignee?.login)
     }
 
     console.log('')
     console.log('PRs publicados')
     console.log(chalkTable({
       columns: [
-        { field: 'mergedAt', name: chalk.green('Merged At') },
         { field: 'link', name: chalk.green('Link') },
         { field: 'author', name: chalk.green('Author') },
-        { field: 'title', name: chalk.green('Title') }
+        { field: 'title', name: chalk.green('Title') },
+        { field: 'team', name: chalk.green('Team') },
+        { field: 'mergedAt', name: chalk.green('Merged At') }
       ]
     }, pulls.map(pull => {
       return {
         mergedAt: pull.mergedAt,
         link: pull.html_url,
         title: pull.title,
-        author: pull.user.login
+        author: pull.user.login,
+        team: pull.team
       }
     })))
 
