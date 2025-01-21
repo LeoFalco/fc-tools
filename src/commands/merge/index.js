@@ -24,6 +24,7 @@ class PrMergeCommand {
     await $('gh pr merge -d -r --admin')
     await $(`git branch -D ${currentBranch}`, { reject: false })
     await $('git remote prune origin')
+    await $('npm install')
 
     console.log('PR merged successfully')
   }
