@@ -1,6 +1,5 @@
 const CMMS_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
-  'willaug',
   'tauk7',
   'cesarfield'
 ]
