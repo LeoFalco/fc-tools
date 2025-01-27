@@ -42,7 +42,7 @@ export async function getLatestSha () {
   await $('git fetch')
   const lsRemoveStdout = await $('git ls-remote')
   return lsRemoveStdout.split('\n')
-    .find(line => line.includes('refs/heads/master'))
+    .find(line => line.includes('refs/heads/master') || line.includes('refs/heads/main'))
     .split('\t')
     .shift()
 }
