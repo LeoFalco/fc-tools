@@ -8,6 +8,7 @@ import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
 import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { sheets } from '../../core/drive.js'
 
 class PrOpenedCommand {
   /**
@@ -20,16 +21,17 @@ class PrOpenedCommand {
     program
       .command('opened')
       .description('list open pull requests')
+      .option('-t, --team [team]', 'team to list pull requests')
       .action(this.action.bind(this))
   }
 
   /**
    * @param {Object} options
-   * @param {boolean | undefined} options.generate
+   * @param {boolean | undefined} options.team
    */
   async action (options) {
     // @ts-ignore
-    const { team } = await inquirer.prompt([
+    const team = options.team || await inquirer.prompt([
       {
         type: 'list',
         message: 'Por favor selecione o time que deseja analisar',
@@ -37,7 +39,11 @@ class PrOpenedCommand {
         choices: Object.keys(TEAMS),
         validate: notNullValidator('Por favor selecione um time')
       }
-    ])
+    ]).then((answers) => answers.team)
+
+    if (!TEAMS[team]) {
+      throw new Error('Time não encontrado')
+    }
 
     const assignees = TEAMS[team]
 
@@ -189,7 +195,54 @@ class PrOpenedCommand {
     console.log(
       'Lembre-se de revisar os prs dos colegas, pois a revisão de código é uma prática importante para manter a qualidade do código'
     )
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: '1HfU9yvsmK4yBFDkquozdx4IcGo34NpvKHIlRG5A77Ro',
+      range: 'A1:Z1000'
+    })
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: '1HfU9yvsmK4yBFDkquozdx4IcGo34NpvKHIlRG5A77Ro',
+      range: 'A1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: toRows(pulls)
+      }
+    })
   }
+}
+
+function toRows (pulls) {
+  const rows = pulls.map((pull) => {
+    return [
+      pull.url,
+      pull.title,
+      pull.author?.login,
+      pull.ready ? 'yes' : 'no',
+      pull.mergeable ? 'yes' : 'no',
+      pull.checks ? 'yes' : 'no',
+      pull.approved ? 'yes' : 'no',
+      pull.quality ? 'yes' : 'no',
+      pull.team,
+      pull.age
+    ]
+  })
+
+  return [
+    [
+      'Link',
+      'Title',
+      'Author',
+      'Draft',
+      'Mergeable',
+      'Checks',
+      'Review',
+      'Quality',
+      'Team',
+      'Age'
+    ],
+    ...rows
+  ]
 }
 
 export default new PrOpenedCommand()
