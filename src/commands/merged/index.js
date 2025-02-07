@@ -10,6 +10,7 @@ import { TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { dateFilter, dateValidator, notNullValidator } from '../../core/validators.js'
 import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
+import { sheets } from '../../core/drive.js'
 
 class PrMergedCommand {
   /**
@@ -102,8 +103,37 @@ class PrMergedCommand {
       }
     })))
 
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: '1gQz-I9MPygcUo1nCtUoWXSOvIiZVedoWnj76A3dh6yA',
+      range: 'A1:Z1000'
+    })
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: '1gQz-I9MPygcUo1nCtUoWXSOvIiZVedoWnj76A3dh6yA',
+      range: 'A1',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: toRows(pulls)
+      }
+    })
+
     await startPublishPooling(pulls)
   }
+}
+
+function toRows (pulls) {
+  return [
+    ['Link', 'Author', 'Title', 'Team', 'Merged At'],
+    ...pulls.map(pull => {
+      return [
+        pull.html_url,
+        pull.user.login,
+        pull.title,
+        getTeamByAssignee(pull.assignee?.login),
+        pull.mergedAt
+      ]
+    })
+  ]
 }
 
 async function startPublishPooling (pulls) {
