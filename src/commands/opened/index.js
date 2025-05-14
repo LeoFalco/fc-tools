@@ -7,7 +7,7 @@ import { chain, map, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
-import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import { sheets } from '../../core/drive.js'
 
 class PrOpenedCommand {
@@ -56,6 +56,7 @@ class PrOpenedCommand {
       state: 'OPEN'
     }).then((pulls) => {
       return chain(pulls)
+        .filter(isNotFreelance)
         .map((pull) => {
           const approved = isApproved(pull)
           const notRejected = !isRejected(pull)
