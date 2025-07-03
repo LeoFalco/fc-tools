@@ -150,6 +150,7 @@ class GithubFacade {
       console.log(`consultando pull requests de ${assignee}`)
       return octokit.rest.search.issuesAndPullRequests({
         q: `is:pr is:${params.state.toLowerCase()} org:${params.organization} author:${assignee}`,
+        advanced_search: 'true',
         page: 1,
         per_page: 30
       })
