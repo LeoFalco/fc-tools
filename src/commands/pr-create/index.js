@@ -134,7 +134,11 @@ class PrCreateCommand {
     const teamNames = Object.keys(teamMap)
     const teamMembers = Object.values(teamMap).flat()
 
-    const reviewers = teamNames.concat(teamMembers)
+    const reviewers = teamNames
+      .concat(teamMembers)
+      .concat(['pedroaugusto2002', 'tauk7', 'giovanalmeida2'])
+      .filter(value => value !== 'lfreneda')
+      .filter(value => value !== 'IgorMoraes15')
 
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
