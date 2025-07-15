@@ -26,12 +26,14 @@ class PrCreateCommand {
       .command('pr-create')
       .description('create a new pull request based con current branch')
       .option('-g, --generate,', 'use ia to generate pr description')
+      .option('-f, --fix', 'add hotfix label to the pull request')
       .action(this.action.bind(this))
   }
 
   /**
    * @param {Object} options
    * @param {boolean | undefined} options.generate
+   * @param {boolean | undefined} options.fix
    */
   async action (options) {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
@@ -150,6 +152,19 @@ class PrCreateCommand {
       })
 
     const url = await $('gh pr view --json url --jq .url')
+
+    if (options.fix) {
+      const hotfixLabelName = await $("gh label list --json name --jq '.[].name'")
+        .then((names) => names.split('\n').map(name => name.trim()).filter(Boolean))
+        .then((names) => names.filter(name => name.includes('hotfix')))
+        .then((names) => names[0] || null)
+
+      if (!hotfixLabelName) {
+        await $('gh label create "hotfix 🔥" --color ff0000 --description "Hotfix label"')
+      }
+
+      await $('gh pr edit --add-label "hotfix 🔥"')
+    }
 
     info(`pr opened ${url}`)
   }
