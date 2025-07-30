@@ -154,16 +154,20 @@ class PrCreateCommand {
     const url = await $('gh pr view --json url --jq .url')
 
     if (options.fix) {
-      const hotfixLabelName = await $("gh label list --json name --jq '.[].name'")
+      const hotfixLabelName = await $('gh label list --json name --jq ".[].name"')
         .then((names) => names.split('\n').map(name => name.trim()).filter(Boolean))
-        .then((names) => names.filter(name => name.includes('hotfix')))
+        .then((names) => names.filter(name => name.includes('fix')))
         .then((names) => names[0] || null)
 
-      if (!hotfixLabelName) {
-        await $('gh label create "hotfix 🔥" --color ff0000 --description "Hotfix label"')
+      if (hotfixLabelName) {
+        info(`Adding hotfix label: ${hotfixLabelName}`)
+        await $(`gh pr edit --add-label '${hotfixLabelName}'`)
+      } else {
+        info('Creating and adding hotfix label: hotfix 🔥')
+        await $("gh label create 'hotfix 🔥' --color ff0000 --description 'Hotfix label'")
+        console.log('Adding hotfix label: hotfix 🔥')
+        await $("gh pr edit --add-label 'hotfix 🔥'")
       }
-
-      await $('gh pr edit --add-label "hotfix 🔥"')
     }
 
     info(`pr opened ${url}`)
