@@ -161,10 +161,10 @@ class PrCreateCommand {
 
       if (hotfixLabelName) {
         info(`Adding hotfix label: ${hotfixLabelName}`)
-        await $(`gh pr edit --add-label '${hotfixLabelName}'`)
+        await $(`gh pr edit --add-label ${hotfixLabelName}`)
       } else {
         info('Creating and adding hotfix label: hotfix 🔥')
-        await $("gh label create 'hotfix 🔥' --color ff0000 --description 'Hotfix label'")
+        await $('gh label create hotfix\\ 🔥 --color ff0000 --description Hotfix\\ label')
         console.log('Adding hotfix label: hotfix 🔥')
         await $("gh pr edit --add-label 'hotfix 🔥'")
       }
