@@ -7,6 +7,7 @@ import { oraPromise } from 'ora'
 import { TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { coloredConclusion, coloredStatus, formatTitle, padEnd, red } from '../core/utils.js'
+import { sleep } from '../../utils/sleep.js'
 
 async function run () {
   const assignees = TEAMS[team]
@@ -72,7 +73,7 @@ async function startPublishPooling (pulls) {
     pulls = pulls.filter((pull) => pull.isPublishing)
     if (!pulls.length) break
     console.log(new Date().toISOString(), 'Some PRs are still being published. Waiting 5 seconds to check again...')
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    await sleep(5000)
   }
 }
 

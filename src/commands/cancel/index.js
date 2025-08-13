@@ -1,5 +1,6 @@
 import { $ } from '../../core/exec.js'
 import { warn } from '../../core/patch-console-log.js'
+import { sleep } from '../../utils/sleep.js'
 
 class PreviewCommand {
   install ({ program }) {
@@ -29,7 +30,7 @@ class PreviewCommand {
     }
 
     warn(`Failed to get url, retrying ${retries + 1}`)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await sleep(1000)
 
     return this.getId(currentCommitSha, retries + 1)
   }
