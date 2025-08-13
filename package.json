@@ -44,7 +44,7 @@
     "date-fns": "4.1.0",
     "date-fns-tz": "3.2.0",
     "dotenv": "17.2.1",
-    "execa": "9.5.2",
+    "execa": "9.6.0",
     "googleapis": "148.0.0",
     "inquirer": "12.5.0",
     "lodash-es": "4.17.21",
