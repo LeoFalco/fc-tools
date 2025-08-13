@@ -38,6 +38,10 @@ export function isNotFreelance (pull) {
   return !pull.labels.nodes.find((label) => label.name.toLowerCase().includes('freelance'))
 }
 
+export function isNotFieldBounty (pull) {
+  return !pull.labels.nodes.find((label) => label.name.toLowerCase().includes('FieldBounty'))
+}
+
 export function isNotWait (pull) {
   return !pull.labels.nodes.some((label) => label.name.toLowerCase().includes('wait'))
 }

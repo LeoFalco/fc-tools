@@ -23,7 +23,8 @@ const FSM_MAINTENANCE_TEAM_MEMBERS = [
 const QUALITY_TEAM = [
   'viniciusfantoli',
   'panegace',
-  'giovanalmeida2'
+  'giovanalmeida2',
+  'QualidadeFieldControl'
 ]
 
 const TEAMS = {
