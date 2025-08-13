@@ -38,7 +38,7 @@
     "eslint-plugin-promise": "6.6.0"
   },
   "dependencies": {
-    "chalk": "5.4.1",
+    "chalk": "5.5.0",
     "chalk-table": "1.0.2",
     "commander": "13.1.0",
     "date-fns": "4.1.0",
@@ -53,6 +53,6 @@
     "open": "10.1.0",
     "openai": "4.90.0",
     "ora": "8.2.0",
-    "yaml": "2.8.1"
+    "yaml": "2.7.0"
   }
 }
