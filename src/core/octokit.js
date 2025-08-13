@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { Octokit } from 'octokit'
 
 dotEnv.config({
-  path: join(dirname(fileURLToPath(import.meta.url)), '../../.env')
+  path: join(dirname(fileURLToPath(import.meta.url)), '../../.env'),
+  debug: false,
+  quiet: true
 })
 
 export const octokit = new Octokit({
