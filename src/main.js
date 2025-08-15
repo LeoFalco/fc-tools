@@ -1,14 +1,14 @@
 import { Command as Commander } from 'commander'
 import { installCommands } from './commands/index.js'
 import { readPackageJSON } from './utils/read-package-json.js'
-import { checkUpdate } from './core/check-update.js'
+// import { checkUpdate } from './core/check-update.js'
 import chalk from 'chalk'
 import { error } from './core/patch-console-log.js'
 const { red } = chalk
 
 export async function run () {
   try {
-    await checkUpdate()
+    // await checkUpdate()
     const program = await createProgram()
     await installCommands({ program })
     await program.parseAsync()

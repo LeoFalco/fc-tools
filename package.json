@@ -38,6 +38,7 @@
     "eslint-plugin-promise": "6.6.0"
   },
   "dependencies": {
+    "axios": "1.11.0",
     "chalk": "5.5.0",
     "chalk-table": "1.0.2",
     "commander": "14.0.0",

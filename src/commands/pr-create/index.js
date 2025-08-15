@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { Octokit } from 'octokit'
 import YAML from 'yaml'
 import { $ } from '../../core/exec.js'
-import { generateFieldNewsSuggestion } from '../../services/open-ai-api.js'
+import { generateFieldNewsSuggestion } from '../../services/openai/open-ai-api.js'
 import { error, info, warn } from '../../core/patch-console-log.js'
 
 const CURRENT_DIR_NAME = dirname(fileURLToPath(import.meta.url))

@@ -8,7 +8,7 @@ import ora from 'ora'
  * @param {Object} [options] - options
  * @param {boolean} [options.reject] - reject promise on error (default: true)
  * @param {string} [options.returnProperty] - stdout | stderr
- * @param {boolean} [options.loading] - loading
+ * @param {boolean} [options.loading] - loading spinner (default: true)
  * @param { 'pipe'| 'inherit' | 'ignore' | 'overlapped' } [options.stdio] - stdio option for execa (default: pipe)
  * @returns {Promise<string>}
  */
@@ -43,15 +43,4 @@ export async function $ (command, options) {
   }
 
   return returnValue
-}
-
-export function $stream (command, options) {
-  options = options || {}
-  options.reject = typeof options.reject === 'boolean' ? options.reject : true
-  options.returnProperty = options.returnProperty || 'stdout'
-
-  return exec(command, {
-    cleanup: true,
-    reject: options.reject
-  })
 }
