@@ -4,6 +4,7 @@ import { unionBy, uniqBy } from 'lodash-es'
 import { $ } from '../../core/exec.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import inquirer from 'inquirer'
+import { githubFacade } from '../../core/githubFacade.js'
 
 class PrMergeCommand {
   /**
@@ -56,6 +57,7 @@ class PrMergeCommand {
       return
     }
 
+    console.log(`Found ${cardsWithPrs.length} cards with pull requests.`)
     for (const card of cardsWithPrs) {
       await mergeCardPrs(card, options)
       await moveCardToMergedStage(card)
@@ -107,7 +109,27 @@ async function mergeCardPrs (card, options) {
     console.log(`Merging pr ${pullRequest.url}`)
 
     const reject = !options.continue
-    await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'inherit', loading: false })
+
+    const prState = await $(`gh pr view ${pullRequest.url} --json state`, { reject, stdio: 'pipe', loading: false })
+    console.log(`Pull request state: ${prState}`)
+
+    const isOpen = !prState.includes('OPEN')
+    if (isOpen) {
+      console.log(`Pull request ${pullRequest.url} is open merging...`)
+      await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'inherit', loading: false })
+      const job = await githubFacade.listWorkflowJobs({
+        owner: pullRequest.owner,
+        repo: pullRequest.repo
+      })
+
+      console.log(JSON.stringify(job, null, 2))
+
+      await fluxClient.createCardComment({
+        cardId: card.id,
+        content: `Pull request ${pullRequest.url} merged successfully. ${job.html_url}`
+      })
+    }
+
     console.log('pr merge request end')
   }
 }
