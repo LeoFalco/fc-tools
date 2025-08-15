@@ -50,7 +50,12 @@ class PrMergeCommand {
       name: 'confirm',
       message: `Found ${cardsWithPrs.length} cards with pull requests. Do you want to merge them?`,
       default: false
-    })
+    }).then(answer => answer.confirm)
+
+    if (!confirmed) {
+      console.log('Merge operation not confirmed exiting.')
+      return
+    }
 
     for (const card of cardsWithPrs) {
       await mergeCardPrs(card)
@@ -98,10 +103,10 @@ function extractPrData (card) {
 
 async function mergeCardPrs (card) {
   for (const pullRequest of card.pullRequests) {
-    console.log(`Merging PR: ${pullRequest.url}`)
-    await $(`gh pr review ${pullRequest.url} --approve`, { reject: false, stdio: 'inherit', loading: false })
+    console.log('')
+    console.log(`Merging pr ${pullRequest.url}`)
     await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject: false, stdio: 'inherit', loading: false })
-    console.log('PR merge request end')
+    console.log('pr merge request end')
   }
 }
 export default new PrMergeCommand()

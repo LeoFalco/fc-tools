@@ -22,6 +22,10 @@ export async function $ (command, options) {
     ? ora({ text: command }).start()
     : null
 
+  if (!options.loading) {
+    console.log(command)
+  }
+
   const result = await exec(command, {
     cleanup: true,
     reject: options.reject,
