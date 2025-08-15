@@ -112,6 +112,28 @@ class FluxClient {
 
     return response.data.data.moveCardToStage
   }
+
+  async createCardComment ({ cardId, content }) {
+    const response = await client.post('', {
+      operationName: 'CreateCardComment',
+      variables: {
+        input: {
+          cardId,
+          content
+        }
+      },
+      query: `#graphql
+        mutation CreateCardComment($input: CreateCardCommentInput!) {
+          createCardComment(input: $input) {
+            id
+            __typename
+          }
+        }
+      `
+    })
+
+    return response.data.data.createCardComment
+  }
 }
 
 export const fluxClient = new FluxClient()
