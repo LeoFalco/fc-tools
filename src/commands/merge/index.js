@@ -36,7 +36,7 @@ class PrMergeCommand {
     console.log('Merging PR with flux...')
 
     const cards = await fluxClient.getUnopenedCards({
-      stageId: 'b50e2558-d96b-46aa-abee-a0425c553ef6',
+      stageId: '197e0fd9-ef45-4baa-94aa-e50b2a86b9d5',
       take: 10,
       skip: 0
     })
