@@ -2,7 +2,7 @@
 
 import { unionBy, uniqBy } from 'lodash-es'
 import { $ } from '../../core/exec.js'
-import { fluxClient } from '../../services/flux/flux-client.js'
+import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import inquirer from 'inquirer'
 
 class PrMergeCommand {
@@ -19,6 +19,7 @@ class PrMergeCommand {
       .action(this.action.bind(this))
       .option('--flux', 'merge pull request with flux')
       .option('--confirm', 'execute merge without confirmation')
+      .option('--continue', 'continue merging after a failed merge', false)
   }
 
   /**
@@ -36,12 +37,10 @@ class PrMergeCommand {
     console.log('Merging PR with flux...')
 
     const cards = await fluxClient.getUnopenedCards({
-      stageId: '197e0fd9-ef45-4baa-94aa-e50b2a86b9d5',
+      stageId: STAGES.PUBLISH,
       take: 10,
       skip: 0
     })
-
-    console.log(`Found ${cards.items.length} unopened cards in the stage.`)
 
     const cardsWithPrs = cards.items.map(extractPrData)
 
@@ -58,7 +57,8 @@ class PrMergeCommand {
     }
 
     for (const card of cardsWithPrs) {
-      await mergeCardPrs(card)
+      await mergeCardPrs(card, options)
+      await moveCardToMergedStage(card)
     }
   }
 
@@ -101,12 +101,25 @@ function extractPrData (card) {
   return card
 }
 
-async function mergeCardPrs (card) {
+async function mergeCardPrs (card, options) {
   for (const pullRequest of card.pullRequests) {
     console.log('')
     console.log(`Merging pr ${pullRequest.url}`)
-    await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject: false, stdio: 'inherit', loading: false })
+
+    const reject = !options.continue
+    await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'inherit', loading: false })
     console.log('pr merge request end')
   }
+}
+
+async function moveCardToMergedStage (card) {
+  console.log(`Moving card "${card.name}" to the "Merged" stage...`)
+  await fluxClient.moveCardToStage({
+    cardId: card.id,
+    afterStageId: STAGES.MERGED,
+    beforeStageId: card.currentStage.id,
+    nextCardId: null
+  })
+  console.log(`Card "${card.name}" moved to the "Merged" stage.`)
 }
 export default new PrMergeCommand()
