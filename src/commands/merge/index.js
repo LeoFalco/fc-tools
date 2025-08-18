@@ -1,6 +1,6 @@
 // @ts-check
 
-import { unionBy, uniqBy } from 'lodash-es'
+import { uniqBy } from 'lodash-es'
 import { $ } from '../../core/exec.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import inquirer from 'inquirer'
@@ -89,7 +89,7 @@ function extractPrData (card) {
       url: match[0],
       owner: match.groups.owner,
       repo: match.groups.repo,
-      number: match.groups.number
+      number: Number(match.groups.number)
     })
   }
 
@@ -106,14 +106,11 @@ function extractPrData (card) {
 async function mergeCardPrs (card, options) {
   for (const pullRequest of card.pullRequests) {
     console.log('')
-    console.log(`Merging pr ${pullRequest.url}`)
-
     const reject = !options.continue
+    const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
+    console.log(`Pull request state: ${state}`)
 
-    const prState = await $(`gh pr view ${pullRequest.url} --json state`, { reject, stdio: 'pipe', loading: false })
-    console.log(`Pull request state: ${prState}`)
-
-    const isOpen = prState.includes('OPEN')
+    const isOpen = state.includes('OPEN')
     if (isOpen) {
       console.log(`Pull request ${pullRequest.url} is open merging...`)
       await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'inherit', loading: false })
@@ -122,22 +119,49 @@ async function mergeCardPrs (card, options) {
         repo: pullRequest.repo
       })
 
-      console.log(JSON.stringify(job, null, 2))
-
       await fluxClient.createCardComment({
         cardId: card.id,
         content: `Pull request ${pullRequest.url} merged successfully. ${job.html_url}`
       })
-
-      await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'inherit', loading: false })
     }
 
-    console.log('pr merge request end')
+    const comments = await githubFacade.getPullRequestComments({
+      organization: pullRequest.owner,
+      repo: pullRequest.repo,
+      number: pullRequest.number
+    })
+
+    const hasFluxCardComment = comments.some(comment => comment.body.includes('Flux: https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId='))
+
+    if (!hasFluxCardComment) {
+      await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'inherit', loading: false })
+    }
   }
 }
 
 async function moveCardToMergedStage (card) {
   console.log(`Moving card "${card.name}" to the "Merged" stage...`)
+
+  const allPullRequests = await Promise.all(card.pullRequests.map(pr => githubFacade.getPullRequest({
+    organization: pr.owner,
+    repo: pr.repo,
+    number: pr.number
+  })))
+
+  console.log(`Found ${allPullRequests.length} pull requests in card "${card.name}".`)
+
+  const states = allPullRequests.map(pr => pr.state)
+  console.log(`Pull request states: ${states.join(', ')}`)
+
+  const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
+
+  console.log(`All pull requests merged or closed: ${everyPullRequestIsMergedOrClosed}`)
+
+  if (!everyPullRequestIsMergedOrClosed) {
+    console.log(`Not all pull requests in card "${card.name}" are merged or closed. Skipping stage change.`)
+    return
+  }
+
   await fluxClient.moveCardToStage({
     cardId: card.id,
     afterStageId: STAGES.MERGED,

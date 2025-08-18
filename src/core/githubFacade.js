@@ -56,6 +56,31 @@ class GithubFacade {
     return await octokit.rest.users.getAuthenticated()
   }
 
+  async getPullRequestComments ({ organization, repo, number }) {
+    return await octokit.graphql(`
+      query getPullRequestComments($organization: String!, $repo: String!, $number: Int!) {
+        viewer {
+          organization(login: $organization) {
+            repository(name: $repo) {
+              pullRequest(number: $number) {
+                comments(first: 100) {
+                  nodes {
+                    id
+                    author {
+                      login
+                    }
+                    body
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `, { organization, repo, number })
+      .then(response => response.viewer.organization.repository.pullRequest.comments.nodes)
+  }
+
   /**
    *
    * @param {object} params
@@ -201,6 +226,16 @@ class GithubFacade {
           return pull
         })
       )
+    })
+  }
+
+  getPullRequest (params) {
+    return octokit.graphql(GET_PULL_REQUESTS, {
+      organization: params.organization,
+      repository: params.repo,
+      number: params.number
+    }).then((response) => {
+      return response.viewer.organization.repository.pullRequest
     })
   }
 }

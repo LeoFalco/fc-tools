@@ -10,7 +10,8 @@ import ora from 'ora'
  * @param {string} [options.returnProperty] - stdout | stderr
  * @param {boolean} [options.loading] - loading spinner (default: true)
  * @param { 'pipe'| 'inherit' | 'ignore' | 'overlapped' } [options.stdio] - stdio option for execa (default: pipe)
- * @returns {Promise<string>}
+ * @param {boolean} [options.json] - parse output as JSON (default: false)
+ * @returns {Promise<string | Object>} - command output
  */
 export async function $ (command, options) {
   options = options || {}
@@ -42,9 +43,7 @@ export async function $ (command, options) {
 
   const returnValue = result[options.returnProperty]
 
-  if (typeof returnValue === 'string') {
-    return returnValue.trim()
-  }
+  const returnValueAsString = typeof returnValue === 'string' ? returnValue.trim() : returnValue
 
-  return returnValue
+  return options.json ? JSON.parse(returnValueAsString) : returnValueAsString
 }
