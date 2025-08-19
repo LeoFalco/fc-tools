@@ -63,6 +63,11 @@ export const red = (param) => {
   return value ? chalk.green('✅ ' + key) : chalk.red('❌ ' + key)
 }
 
+export const coloredBoolean = (param) => {
+  const [key, value] = Object.entries(param)[0]
+  return value ? chalk.green('✅ ' + key) : chalk.red('❌ ' + key)
+}
+
 export const calcAge = (pull) => {
   return differenceInDays(Date.now(), parseISO(pull.createdAt))
 }

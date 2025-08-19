@@ -236,6 +236,9 @@ class GithubFacade {
       number: params.number
     }).then((response) => {
       return response.viewer.organization.repository.pullRequest
+    }).then(async (pull) => {
+      pull.checks = pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
+      return pull
     })
   }
 }

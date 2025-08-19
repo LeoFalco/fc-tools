@@ -14,7 +14,10 @@ export async function run () {
     await program.parseAsync()
   } catch (err) {
     error(formatErrorMessage(err))
-    error(err.stack)
+    const isUnknownError = !err.message.includes('User force closed the prompt')
+    if (isUnknownError) {
+      error(err.stack)
+    }
     process.exitCode = 1
   }
 }

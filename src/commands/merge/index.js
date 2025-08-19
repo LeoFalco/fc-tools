@@ -1,10 +1,12 @@
 // @ts-check
 
-import { uniqBy } from 'lodash-es'
-import { $ } from '../../core/exec.js'
-import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import inquirer from 'inquirer'
+import { uniqBy } from 'lodash-es'
+import { QUALITY_TEAM } from '../../core/constants.js'
+import { $ } from '../../core/exec.js'
 import { githubFacade } from '../../core/githubFacade.js'
+import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
+import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 
 class PrMergeCommand {
   /**
@@ -39,16 +41,19 @@ class PrMergeCommand {
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.PUBLISH,
+      // stageId: STAGES.MERGED,
       take: 10,
       skip: 0
     })
 
-    const cardsWithPrs = cards.items.map(extractPrData)
+    for (const card of cards) {
+      await extractPrData(card)
+    }
 
     const confirmed = options.confirm || await inquirer.prompt({
       type: 'confirm',
       name: 'confirm',
-      message: `Found ${cardsWithPrs.length} cards with pull requests. Do you want to merge them?`,
+      message: `Found ${cards.length} cards. Do you want to merge them?`,
       default: false
     }).then(answer => answer.confirm)
 
@@ -57,8 +62,7 @@ class PrMergeCommand {
       return
     }
 
-    console.log(`Found ${cardsWithPrs.length} cards with pull requests.`)
-    for (const card of cardsWithPrs) {
+    for (const card of cards) {
       await mergeCardPrs(card, options)
       await moveCardToMergedStage(card)
     }
@@ -78,7 +82,7 @@ class PrMergeCommand {
 
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
 
-function extractPrData (card) {
+async function extractPrData (card) {
   console.log('Extracting PR data from card:', card.name.trim())
   card.name = card.name.trim()
   card.pullRequests = []
@@ -95,16 +99,60 @@ function extractPrData (card) {
 
   card.pullRequests = uniqBy(card.pullRequests, 'url')
 
-  console.log(`   Found ${card.pullRequests.length} PR(s) in the card description.`)
-  card.pullRequests.forEach(pr => {
-    console.log(`      - ${pr.url}`)
+  for (const pr of card.pullRequests) {
+    const pull = await githubFacade.getPullRequest({
+      organization: pr.owner,
+      repo: pr.repo,
+      number: pr.number
+    })
+
+    const approved = isApproved(pull)
+    const notRejected = !isRejected(pull)
+    const mergeable = isMergeable(pull)
+    const checks = isChecksPassed(pull)
+    const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
+    const ready = isReady(pull)
+    const publish = approved && notRejected && mergeable && checks && quality && ready
+
+    Object.assign(pr, {
+      $metadata: {
+        approved,
+        notRejected,
+        mergeable,
+        checks,
+        quality,
+        ready,
+        publish
+      }
+    })
+  }
+
+  if (card.pullRequests.length === 0) {
+    console.log('  - No pull requests found in description.')
+  }
+
+  card.pullRequests.forEach((pull) => {
+    const notes = []
+    Object.entries(pull.$metadata).forEach(([key, value]) => {
+      notes.push(coloredBoolean({ [key]: value }))
+    })
+    console.log(`  - ${pull.url}`, notes.join(' '))
   })
 
   return card
 }
 
 async function mergeCardPrs (card, options) {
+  console.log(`Merging pull requests for card "${card.name}"...`)
+  if (card.pullRequests.length === 0) {
+    console.log(`  No pull requests found for card "${card.name}". Skipping...`)
+  }
   for (const pullRequest of card.pullRequests) {
+    if (!pullRequest.$metadata.publish) {
+      console.log(`  Skipping merge pull request ${pullRequest.url}`)
+      continue
+    }
+
     console.log('')
     const reject = !options.continue
     const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
@@ -134,7 +182,8 @@ async function mergeCardPrs (card, options) {
     const hasFluxCardComment = comments.some(comment => comment.body.includes('Flux: https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId='))
 
     if (!hasFluxCardComment) {
-      await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'inherit', loading: false })
+      console.log('Adding Flux comment to pull request ...')
+      await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'ignore', loading: false })
     }
   }
 }
@@ -148,17 +197,15 @@ async function moveCardToMergedStage (card) {
     number: pr.number
   })))
 
-  console.log(`Found ${allPullRequests.length} pull requests in card "${card.name}".`)
-
   const states = allPullRequests.map(pr => pr.state)
-  console.log(`Pull request states: ${states.join(', ')}`)
+  console.log(`  Pull request states: ${states.join(', ')}`)
 
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
-  console.log(`All pull requests merged or closed: ${everyPullRequestIsMergedOrClosed}`)
+  console.log(`  All pull requests merged or closed: ${everyPullRequestIsMergedOrClosed}`)
 
   if (!everyPullRequestIsMergedOrClosed) {
-    console.log(`Not all pull requests in card "${card.name}" are merged or closed. Skipping stage change.`)
+    console.log(`  Not all pull requests in card "${card.name}" are merged or closed. Skipping stage change.`)
     return
   }
 
@@ -168,6 +215,7 @@ async function moveCardToMergedStage (card) {
     beforeStageId: card.currentStage.id,
     nextCardId: null
   })
-  console.log(`Card "${card.name}" moved to the "Merged" stage.`)
+
+  console.log(`  Card "${card.name}" moved to the "Merged" stage.`)
 }
 export default new PrMergeCommand()

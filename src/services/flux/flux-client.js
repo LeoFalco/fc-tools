@@ -19,10 +19,15 @@ client.interceptors.request.use((config) => {
 
 // intercep erros and log graphq errors if exists
 client.interceptors.response.use(
-  response => response,
+  response => {
+    if (response.data.errors) {
+      console.error('GraphQL Errors:', JSON.stringify(response.data.errors, null, 2))
+    }
+    return response
+  },
   error => {
-    if (error.response && error.response.data && error.response.data.errors) {
-      console.error('GraphQL Errors:', error.response.data.errors)
+    if (error.response?.data?.errors) {
+      console.error('GraphQL Errors:', JSON.stringify(error.response.data.errors, null, 2))
     } else {
       console.error('Error:', error.message)
     }
@@ -37,7 +42,7 @@ class FluxClient {
    * @param {string} params.stageId - ID of the stage to fetch cards from
    * @param {number} [params.take] - Number of items to fetch (default: 10)
    * @param {number} [params.skip] - Number of items to skip (default: 0)
-   * @returns {Promise<{ items: Array, totalCount: number, pageInfo: { hasNextPage: boolean, hasPreviousPage: boolean } }>}
+   * @returns {Promise<Array>}
    * @description Fetches unopened cards from a specific stage in Flux.
    * @returns
    */
@@ -86,7 +91,7 @@ class FluxClient {
       `
     })
 
-    return response.data.data.unopenedCards
+    return response.data.data.unopenedCards.items
   }
 
   async moveCardToStage ({ cardId, afterStageId, beforeStageId, nextCardId }) {
@@ -110,7 +115,7 @@ class FluxClient {
       `
     })
 
-    return response.data.data.moveCardToStage
+    return response.data.data
   }
 
   async createCardComment ({ cardId, content }) {
