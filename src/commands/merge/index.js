@@ -83,10 +83,18 @@ class PrMergeCommand {
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
 
 async function extractPrData (card) {
-  console.log('Extracting PR data from card:', card.name.trim())
   card.name = card.name.trim()
   card.pullRequests = []
+
+  card.fields = await fluxClient.getCardFields({ cardId: card.id })
+    .then(fields => fields.filter(f => f.title && f.value))
+
+  console.log('Extracting PR data from card:', card.name)
+
   const description = String(card.description || '')
+    .concat('\n\n')
+    .concat(card.fields.map(f => f.name + ': ' + f.value).join('\n'))
+
   for (const match of description.matchAll(githubPrUrlRegex)) {
     if (match.groups == null) continue
     card.pullRequests.push({

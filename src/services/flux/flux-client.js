@@ -17,7 +17,7 @@ client.interceptors.request.use((config) => {
   return config
 })
 
-// intercep erros and log graphq errors if exists
+// intercept errors and log graphq errors if exists
 client.interceptors.response.use(
   response => {
     if (response.data.errors) {
@@ -138,6 +138,29 @@ class FluxClient {
     })
 
     return response.data.data.createCardComment
+  }
+
+  async getCardFields ({ cardId }) {
+    const response = await client.post('', {
+      operationName: 'GetStartFormFields',
+      variables: {
+        cardId
+      },
+      query: `#graphql
+        query GetStartFormFields($cardId: ID!) {
+          card(id: $cardId) {
+            fields {
+              id
+              type
+              title
+              value
+            }
+          }
+        }
+      `
+    })
+
+    return response.data.data.card.fields
   }
 }
 
