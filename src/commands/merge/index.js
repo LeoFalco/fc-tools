@@ -121,6 +121,12 @@ async function extractPrData (card) {
     const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
     const ready = isReady(pull)
     const publish = approved && notRejected && mergeable && checks && quality && ready
+    const ahead = await githubFacade.isAheadOfBase({
+      baseRef: pull.baseRefName,
+      headRef: pull.headRefName,
+      owner: pr.owner,
+      repo: pr.repo
+    })
 
     Object.assign(pr, {
       $metadata: {
@@ -130,6 +136,7 @@ async function extractPrData (card) {
         checks,
         quality,
         ready,
+        ahead,
         publish
       }
     })
@@ -156,6 +163,15 @@ async function mergeCardPrs (card, options) {
     console.log(`  No pull requests found for card "${card.name}". Skipping...`)
   }
   for (const pullRequest of card.pullRequests) {
+    if (!pullRequest.$metadata.ahead) {
+      console.log('  - PR is not ahead of base branch. Rebasing...')
+      await githubFacade.rebasePullRequest({
+        owner: pullRequest.owner,
+        repo: pullRequest.repo,
+        number: pullRequest.number
+      })
+    }
+
     if (!pullRequest.$metadata.publish) {
       console.log(`  Skipping merge pull request ${pullRequest.url}`)
       continue

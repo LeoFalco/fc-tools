@@ -20,6 +20,8 @@ const GET_PULL_REQUESTS = `#graphql
                 title
                 isDraft
                 reviewDecision
+                baseRefName
+                headRefName
                 repository {
                   name
                 }
@@ -229,7 +231,7 @@ class GithubFacade {
     })
   }
 
-  getPullRequest (params) {
+  async getPullRequest (params) {
     return octokit.graphql(GET_PULL_REQUESTS, {
       organization: params.organization,
       repository: params.repo,
@@ -239,6 +241,27 @@ class GithubFacade {
     }).then(async (pull) => {
       pull.checks = pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
       return pull
+    })
+  }
+
+  async isAheadOfBase ({ owner, repo, baseRef, headRef }) {
+    console.log(`Comparing ${baseRef}...${headRef}`)
+
+    const compare = await octokit.rest.repos.compareCommits({
+      owner,
+      repo,
+      base: baseRef,
+      head: headRef
+    })
+
+    return compare.data.ahead_by > 0
+  }
+
+  async rebasePullRequest ({ owner, repo, number }) {
+    await octokit.rest.pulls.updateBranch({
+      owner,
+      repo,
+      pull_number: number
     })
   }
 }

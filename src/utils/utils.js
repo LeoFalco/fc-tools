@@ -17,7 +17,7 @@ export function isRejected (pull) {
 }
 
 export function isMergeable (pull) {
-  return pull.mergeable === 'MERGEABLE'
+  return pull.mergeable === 'MERGEABLE' || pull.state === 'MERGED'
 }
 
 export function isMerged (pull) {
