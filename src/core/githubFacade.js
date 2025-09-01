@@ -252,7 +252,12 @@ class GithubFacade {
       repo,
       base: baseRef,
       head: headRef
+    }).catch((error) => {
+      console.warn('Error comparing commits:', error.status, error.message)
+      return null
     })
+
+    if (compare == null) return true
 
     return compare.data.ahead_by > 0
   }
