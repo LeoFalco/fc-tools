@@ -7,6 +7,9 @@ import { $ } from '../../core/exec.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import chalk from 'chalk'
+const { red, yellow, green, gray, blue } = chalk
+// const { red, yellow, green, gray, blue } = chalk
 
 class PrMergeCommand {
   /**
@@ -37,7 +40,7 @@ class PrMergeCommand {
   }
 
   async actionWithFlux (options) {
-    console.log('Merging PR with flux...')
+    console.log(blue('Using flux to merge pull requests...'))
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.PUBLISH,
@@ -45,6 +48,11 @@ class PrMergeCommand {
       take: 10,
       skip: 0
     })
+
+    if (!cards || cards.length === 0) {
+      console.log(gray('No cards found in the "Publish" stage. Exiting.'))
+      return
+    }
 
     for (const card of cards) {
       await extractPrData(card)
@@ -89,7 +97,7 @@ async function extractPrData (card) {
   card.fields = await fluxClient.getCardFields({ cardId: card.id })
     .then(fields => fields.filter(f => f.title && f.value))
 
-  console.log('Extracting PR data from card:', card.name)
+  console.log(blue('Card:', card.name))
 
   const description = String(card.description || '')
     .concat('\n\n')
@@ -143,7 +151,7 @@ async function extractPrData (card) {
   }
 
   if (card.pullRequests.length === 0) {
-    console.log('  - No pull requests found in description.')
+    console.log(yellow('  - No pull requests found in description.'))
   }
 
   card.pullRequests.forEach((pull) => {
@@ -151,41 +159,49 @@ async function extractPrData (card) {
     Object.entries(pull.$metadata).forEach(([key, value]) => {
       notes.push(coloredBoolean({ [key]: value }))
     })
-    console.log(`  - ${pull.url}`, notes.join(' '))
+    console.log(blue(`  - ${pull.url}`))
+    console.log(blue(`    ${notes.join(' ')}`))
   })
 
   return card
 }
 
 async function mergeCardPrs (card, options) {
-  console.log(`Merging pull requests for card "${card.name}"...`)
+  console.log('----------------------------------')
+  console.log(`Merging card "${card.name}"...`)
+
   if (card.pullRequests.length === 0) {
-    console.log(`  No pull requests found for card "${card.name}". Skipping...`)
+    console.log(yellow('  No pull requests found'))
   }
   for (const pullRequest of card.pullRequests) {
-    if (!pullRequest.$metadata.ahead) {
-      console.log('  - PR is not ahead of base branch. Rebasing...')
-      await githubFacade.rebasePullRequest({
-        owner: pullRequest.owner,
-        repo: pullRequest.repo,
-        number: pullRequest.number
-      })
-    }
+    console.log(blue(`  - ${pullRequest.url}`))
+    // if (!pullRequest.$metadata.ahead) {
+    // console.log(yellow('    PR is behind of base. Rebasing...'))
+    await githubFacade.rebasePullRequest({
+      owner: pullRequest.owner,
+      repo: pullRequest.repo,
+      number: pullRequest.number
+    })
+    // }
 
     if (!pullRequest.$metadata.publish) {
-      console.log(`  Skipping merge pull request ${pullRequest.url}`)
+      console.log(yellow('    Skipped merge publish conditions not met'))
       continue
     }
 
-    console.log('')
     const reject = !options.continue
     const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
-    console.log(`Pull request state: ${state}`)
+    console.log(blue(`    State ${state}`))
 
     const isOpen = state.includes('OPEN')
     if (isOpen) {
-      console.log(`Pull request ${pullRequest.url} is open merging...`)
-      await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'inherit', loading: false })
+      const result = await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'pipe', loading: false, returnProperty: 'all' })
+
+      if (!result.success) {
+        console.log(red('    ' + result.stderr?.trim()))
+        continue
+      }
+
       const job = await githubFacade.listWorkflowJobs({
         owner: pullRequest.owner,
         repo: pullRequest.repo
@@ -206,13 +222,14 @@ async function mergeCardPrs (card, options) {
     const hasFluxCardComment = comments.some(comment => comment.body.includes('Flux: https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId='))
 
     if (!hasFluxCardComment) {
-      console.log('Adding Flux comment to pull request ...')
+      console.log(green('Adding Flux comment to pull request ...'))
       await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'ignore', loading: false })
     }
   }
 }
 
 async function moveCardToMergedStage (card) {
+  console.log('')
   console.log(`Moving card "${card.name}" to the "Merged" stage...`)
 
   const allPullRequests = await Promise.all(card.pullRequests.map(pr => githubFacade.getPullRequest({
@@ -222,14 +239,12 @@ async function moveCardToMergedStage (card) {
   })))
 
   const states = allPullRequests.map(pr => pr.state)
-  console.log(`  Pull request states: ${states.join(', ')}`)
+  console.log(`  States ${states.join(', ')}`)
 
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
-  console.log(`  All pull requests merged or closed: ${everyPullRequestIsMergedOrClosed}`)
-
   if (!everyPullRequestIsMergedOrClosed) {
-    console.log(`  Not all pull requests in card "${card.name}" are merged or closed. Skipping stage change.`)
+    console.log(red('  Some pull requests are merged or closed. Skipped stage change.'))
     return
   }
 
@@ -240,6 +255,6 @@ async function moveCardToMergedStage (card) {
     nextCardId: null
   })
 
-  console.log(`  Card "${card.name}" moved to the "Merged" stage.`)
+  console.log(green(`  Card "${card.name}" moved to the "Merged" stage.`))
 }
 export default new PrMergeCommand()

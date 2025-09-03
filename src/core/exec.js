@@ -23,10 +23,6 @@ export async function $ (command, options) {
     ? ora({ text: command }).start()
     : null
 
-  if (!options.loading) {
-    console.log(command)
-  }
-
   const result = await exec(command, {
     cleanup: true,
     reject: options.reject,
@@ -40,6 +36,15 @@ export async function $ (command, options) {
       spinner?.fail()
       throw err
     })
+
+  if (options.returnProperty === 'all') {
+    return {
+      exitCode: result.exitCode,
+      success: result.exitCode === 0,
+      stdout: result.stdout,
+      stderr: result.stderr
+    }
+  }
 
   const returnValue = result[options.returnProperty]
 

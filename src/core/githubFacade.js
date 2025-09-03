@@ -245,8 +245,6 @@ class GithubFacade {
   }
 
   async isAheadOfBase ({ owner, repo, baseRef, headRef }) {
-    console.log(`Comparing ${baseRef}...${headRef}`)
-
     const compare = await octokit.rest.repos.compareCommits({
       owner,
       repo,
