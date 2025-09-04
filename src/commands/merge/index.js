@@ -40,7 +40,7 @@ class PrMergeCommand {
   }
 
   async actionWithFlux (options) {
-    console.log(blue('Using flux to merge pull requests...'))
+    console.log(blue('Using flux find pull requests'))
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.PUBLISH,
@@ -50,7 +50,7 @@ class PrMergeCommand {
     })
 
     if (!cards || cards.length === 0) {
-      console.log(gray('No cards found in the "Publish" stage. Exiting.'))
+      console.log(gray('No cards found in publish stage'))
       return
     }
 
@@ -168,7 +168,7 @@ async function extractPrData (card) {
 
 async function mergeCardPrs (card, options) {
   console.log('----------------------------------')
-  console.log(`Merging card "${card.name}"...`)
+  console.log('Merging ...')
 
   if (card.pullRequests.length === 0) {
     console.log(yellow('  No pull requests found'))
@@ -191,7 +191,7 @@ async function mergeCardPrs (card, options) {
 
     const reject = !options.continue
     const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
-    console.log(blue(`    State ${state}`))
+    console.log(blue(`    State is ${state}`))
 
     const isOpen = state.includes('OPEN')
     if (isOpen) {
@@ -230,7 +230,7 @@ async function mergeCardPrs (card, options) {
 
 async function moveCardToMergedStage (card) {
   console.log('')
-  console.log(`Moving card "${card.name}" to the "Merged" stage...`)
+  console.log('Moving card to published stage...')
 
   const allPullRequests = await Promise.all(card.pullRequests.map(pr => githubFacade.getPullRequest({
     organization: pr.owner,
@@ -239,7 +239,7 @@ async function moveCardToMergedStage (card) {
   })))
 
   const states = allPullRequests.map(pr => pr.state)
-  console.log(`  States ${states.join(', ')}`)
+  console.log(`  States are ${states.join(' ')}`)
 
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
