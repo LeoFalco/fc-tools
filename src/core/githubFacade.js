@@ -179,7 +179,7 @@ class GithubFacade {
         q: `is:pr is:${params.state.toLowerCase()} org:${params.organization} author:${assignee}`,
         advanced_search: 'true',
         page: 1,
-        per_page: 30
+        per_page: 100
       })
         .then((response) => {
           console.log(`Encontrado ${response.data.items.length} pull requests de ${assignee}`)

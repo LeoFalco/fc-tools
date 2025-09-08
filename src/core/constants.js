@@ -1,6 +1,7 @@
 const CMMS_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
-  'tauk7'
+  'tauk7',
+  'cesarfield'
 ]
 
 const CMMS_MAINTENANCE_TEAM_MEMBERS = [

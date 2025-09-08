@@ -157,10 +157,10 @@ async function startPublishPooling (pulls) {
         repo
       })
 
-      pull.isPublishing = job.status !== 'completed'
-      pull.status = job.status
-      pull.conclusion = job.conclusion
-      pull.job_url = job.html_url
+      pull.isPublishing = job?.status !== 'completed'
+      pull.status = job?.status
+      pull.conclusion = job?.conclusion
+      pull.job_url = job?.html_url
 
       console.log([coloredStatus(pull.status), coloredConclusion(pull.conclusion)].join(' '), pull.job_url)
     }
