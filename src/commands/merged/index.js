@@ -157,7 +157,7 @@ async function startPublishPooling (pulls) {
         repo
       })
 
-      pull.isPublishing = job?.status !== 'completed'
+      pull.isPublishing = job ? job.status !== 'completed' : false
       pull.status = job?.status
       pull.conclusion = job?.conclusion
       pull.job_url = job?.html_url

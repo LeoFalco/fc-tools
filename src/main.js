@@ -3,7 +3,7 @@ import { installCommands } from './commands/index.js'
 import { readPackageJSON } from './utils/read-package-json.js'
 // import { checkUpdate } from './core/check-update.js'
 import chalk from 'chalk'
-import { error } from './core/patch-console-log.js'
+import { error, info } from './core/patch-console-log.js'
 const { red } = chalk
 
 export async function run () {
@@ -13,10 +13,12 @@ export async function run () {
     await installCommands({ program })
     await program.parseAsync()
   } catch (err) {
-    error(formatErrorMessage(err))
     const isUnknownError = !err.message.includes('User force closed the prompt')
     if (isUnknownError) {
+      error(formatErrorMessage(err))
       error(err.stack)
+    } else {
+      info(err.message)
     }
     process.exitCode = 1
   }

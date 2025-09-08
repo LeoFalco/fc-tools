@@ -168,21 +168,20 @@ async function extractPrData (card) {
 
 async function mergeCardPrs (card, options) {
   console.log('----------------------------------')
-  console.log('Merging ...')
+  console.log('Merging prs')
 
   if (card.pullRequests.length === 0) {
     console.log(yellow('  No pull requests found'))
   }
   for (const pullRequest of card.pullRequests) {
     console.log(blue(`  - ${pullRequest.url}`))
-    // if (!pullRequest.$metadata.ahead) {
-    // console.log(yellow('    PR is behind of base. Rebasing...'))
     await githubFacade.rebasePullRequest({
       owner: pullRequest.owner,
       repo: pullRequest.repo,
       number: pullRequest.number
+    }).catch(err => {
+      console.log(yellow('    Rebase failed' + err.message))
     })
-    // }
 
     if (!pullRequest.$metadata.publish) {
       console.log(yellow('    Skipped merge publish conditions not met'))
@@ -209,7 +208,7 @@ async function mergeCardPrs (card, options) {
 
       await fluxClient.createCardComment({
         cardId: card.id,
-        content: `Pull request ${pullRequest.url} merged successfully. ${job.html_url}`
+        content: `Pull request ${pullRequest.url} merged successfully. ${job?.html_url}`
       })
     }
 
@@ -222,15 +221,14 @@ async function mergeCardPrs (card, options) {
     const hasFluxCardComment = comments.some(comment => comment.body.includes('Flux: https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId='))
 
     if (!hasFluxCardComment) {
-      console.log(green('Adding Flux comment to pull request ...'))
       await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'ignore', loading: false })
+      console.log(green('Added Flux comment to pull request'))
     }
   }
 }
 
 async function moveCardToMergedStage (card) {
-  console.log('')
-  console.log('Moving card to published stage...')
+  console.log('Moving card to published stage')
 
   const allPullRequests = await Promise.all(card.pullRequests.map(pr => githubFacade.getPullRequest({
     organization: pr.owner,
@@ -244,7 +242,7 @@ async function moveCardToMergedStage (card) {
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
   if (!everyPullRequestIsMergedOrClosed) {
-    console.log(red('  Some pull requests are merged or closed. Skipped stage change.'))
+    console.log(red('  Skipped stage change.'))
     return
   }
 
@@ -255,6 +253,6 @@ async function moveCardToMergedStage (card) {
     nextCardId: null
   })
 
-  console.log(green(`  Card "${card.name}" moved to the "Merged" stage.`))
+  console.log(green('  Card moved.'))
 }
 export default new PrMergeCommand()
