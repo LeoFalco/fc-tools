@@ -242,7 +242,7 @@ async function moveCardToMergedStage (card) {
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
   if (!everyPullRequestIsMergedOrClosed) {
-    console.log(red('  Skipped stage change.'))
+    console.log(red('  Skipped stage change'))
     return
   }
 
@@ -253,6 +253,6 @@ async function moveCardToMergedStage (card) {
     nextCardId: null
   })
 
-  console.log(green('  Card moved.'))
+  console.log(green('  Card moved'))
 }
 export default new PrMergeCommand()

@@ -173,55 +173,77 @@ class GithubFacade {
    * @returns
    */
   async listOpenPullRequestsV2 (params) {
-    const searchPromises = params.assignees.map(async (assignee) => {
-      console.log(`consultando pull requests de ${assignee}`)
-      return octokit.rest.search.issuesAndPullRequests({
-        q: `is:pr is:${params.state.toLowerCase()} org:${params.organization} author:${assignee}`,
-        advanced_search: 'true',
-        page: 1,
-        per_page: 100
+    // Use GraphQL to fetch PRs for each assignee
+    const LIST_PRS = `#graphql
+      query listPullRequestsByState($organization: String!, $states: [PullRequestState!]) {
+        viewer {
+          organization(login: $organization) {
+            repositories(first: 40, isLocked: false, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
+              nodes {
+                name
+                pullRequests(first: 10, states: $states, orderBy: { field: UPDATED_AT, direction: DESC }) {
+                  nodes {
+                    id
+                    url
+                    mergedAt
+                    state
+                    title
+                    author { login }
+                    repository { name owner { login } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `
+
+    const state = params.state === 'MERGED' ? 'MERGED' : params.state
+    const pulls = []
+    try {
+      const data = await octokit.graphql(LIST_PRS, {
+        organization: params.organization,
+        states: [state]
       })
-        .then((response) => {
-          console.log(`Encontrado ${response.data.items.length} pull requests de ${assignee}`)
-          return response
-        })
-    })
-
-    const searchResults = await Promise.all(searchPromises)
-
-    if (params.state === 'MERGED') {
-      return searchResults.map(({ data: { items } }) => items).flat()
+      const repoNodes = data.viewer.organization.repositories.nodes
+      for (const repo of repoNodes) {
+        for (const pr of repo.pullRequests.nodes) {
+          pulls.push({
+            number: pr.url.split('/').pop(),
+            repo: repo.name,
+            url: pr.url,
+            mergedAt: pr.mergedAt,
+            author: pr.author?.login
+          })
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao buscar pull requests:', error.message)
     }
 
-    const pulls = []
-    for (const { data: { items } } of searchResults) {
-      for (const pr of items) {
-        const url = pr.url
-        const regexToExtractNumberAndRepo = /https:\/\/api\.github\.com\/repos\/FieldControl\/([a-z-_\d]+)\/issues\/(\d+)/
-        console.log('pr', url)
-        const [, repo, number] = url.match(regexToExtractNumberAndRepo) || []
+    // Filter by assignees
+    const filteredByAssignee = pulls.filter(pr => params.assignees.includes(pr.author))
 
-        pulls.push({
-          number: parseInt(number),
-          repo,
-          url
-        })
-      }
+    // If only merged PRs are needed, filter by mergedAt
+    let filteredPulls = filteredByAssignee
+    if (params.state === 'MERGED') {
+      filteredPulls = filteredByAssignee.filter(pr => pr.mergedAt)
     }
 
     return Promise.all(
-      pulls.map(async (pull) => {
-        console.log(`consultando pull request ${pull.url}`)
+      filteredPulls.map(async (pull) => {
+        console.log(`consultando pull ${pull.url}`)
         return octokit.graphql(GET_PULL_REQUESTS, {
           organization: params.organization,
           repository: pull.repo,
-          number: pull.number
+          number: parseInt(pull.number)
         }).then((response) => response.viewer.organization.repository.pullRequest)
       })
     ).then((pulls) => {
       return Promise.all(
         pulls.map(async (pull) => {
-          console.log(`consultando checks do pull request ${pull.url}`)
+          console.log(`consultando check ${pull.url}`)
           Object.assign(pull, {
             checks: pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
           })

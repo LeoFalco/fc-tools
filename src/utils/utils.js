@@ -69,7 +69,7 @@ export const coloredBoolean = (param) => {
 }
 
 export const calcAge = (pull) => {
-  return differenceInDays(Date.now(), parseISO(pull.createdAt))
+  return Math.max(differenceInDays(Date.now(), parseISO(pull.createdAt)), 1)
 }
 
 export function padEnd (value, length) {

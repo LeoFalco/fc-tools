@@ -2,16 +2,16 @@
 
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
-import { format, parseISO } from 'date-fns'
+import { differenceInBusinessDays, format, parseISO } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
-import inquirer from 'inquirer'
 import { chain } from 'lodash-es'
 import { TEAMS } from '../../core/constants.js'
+import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { dateFilter, dateValidator, notNullValidator } from '../../core/validators.js'
-import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
-import { sheets } from '../../core/drive.js'
 import { sleep } from '../../utils/sleep.js'
+import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
+import inquirer from 'inquirer'
 
 class PrMergedCommand {
   /**
@@ -24,14 +24,24 @@ class PrMergedCommand {
     program
       .command('merged')
       .description('list open pull requests')
+      .option('-f, --from <from>', 'from date yyyy-mm-dd')
+      .option('-t, --to <to>', 'to date yyyy-mm-dd')
+      .option('--team <team>', 'team to analyze')
       .action(this.action.bind(this))
   }
 
   /**
    * @param {Object} options
-   * @param {boolean | undefined} options.generate
+   * @param {string | undefined} options.from
+   * @param {string | undefined} options.to
+   * @param {string | undefined} options.team
    */
   async action (options) {
+    console.log('List pull requests options', options)
+
+    const from = options.from ? options.from : undefined
+    const to = options.to ? options.to : undefined
+
     // @ts-ignore
     const { startDate, endDate, team } = await inquirer.prompt([
       {
@@ -39,13 +49,17 @@ class PrMergedCommand {
         message: 'Por favor selecione o time que deseja analisar',
         name: 'team',
         choices: Object.keys(TEAMS),
+        default: options.team || TEAMS.CMMS,
         validate: notNullValidator('Por favor selecione um time')
       },
       {
         type: 'input',
         name: 'startDate',
         message: 'Informe a data inicial no formato yyyy-mm-dd',
-        default: new Date().toISOString().split('T').shift(),
+        default: from || new Date().toISOString().split('T').shift(),
+        when () {
+          return !from
+        },
         validate: dateValidator,
         filter: dateFilter
       },
@@ -53,7 +67,10 @@ class PrMergedCommand {
         type: 'input',
         name: 'endDate',
         message: 'Informe a data final no formato yyyy-mm-dd',
-        default: new Date().toISOString().split('T').shift(),
+        default: to || new Date().toISOString().split('T').shift(),
+        when () {
+          return !to
+        },
         validate: dateValidator,
         filter: dateFilter
       }
@@ -66,6 +83,8 @@ class PrMergedCommand {
       throw error
     })
 
+    console.log('Analisando PRs do time', team, 'entre', startDate, 'e', endDate)
+
     const assignees = TEAMS[team]
 
     const pulls = await githubFacade.listOpenPullRequestsV2({
@@ -74,14 +93,21 @@ class PrMergedCommand {
       organization: 'FieldControl'
     }).then((pulls) => {
       return pulls.filter((pull) => {
-        const mergedDate = pull.pull_request.merged_at.split('T').shift()
+        if (!pull.mergedAt) return false
+        const mergedDate = pull.mergedAt.split('T').shift()
         return mergedDate && mergedDate >= startDate && mergedDate <= endDate
       })
     })
 
     for (const pull of pulls) {
-      pull.mergedAt = format(toZonedTime(parseISO(pull.pull_request.merged_at), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
-      pull.team = getTeamByAssignee(pull.assignee?.login)
+      console.log('PR:', pull)
+      pull.createdAt = pull.createdAt && format(toZonedTime(parseISO(pull.createdAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
+      pull.mergedAt = pull.mergedAt && format(toZonedTime(parseISO(pull.mergedAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
+      pull.durationDays = pull.createdAt && pull.mergedAt
+        ? Math.max(differenceInBusinessDays(parseISO(pull.mergedAt), parseISO(pull.createdAt)), 1)
+        : null
+
+      pull.team = getTeamByAssignee(pull.author?.login)
     }
 
     console.log('')
@@ -91,15 +117,14 @@ class PrMergedCommand {
         { field: 'link', name: chalk.green('Link') },
         { field: 'author', name: chalk.green('Author') },
         { field: 'title', name: chalk.green('Title') },
-        { field: 'team', name: chalk.green('Team') },
         { field: 'mergedAt', name: chalk.green('Merged At') }
       ]
     }, pulls.map(pull => {
       return {
         mergedAt: pull.mergedAt,
-        link: pull.html_url,
+        link: pull.url,
         title: pull.title,
-        author: pull.user.login,
+        author: pull.author.login,
         team: pull.team
       }
     })))
@@ -118,20 +143,25 @@ class PrMergedCommand {
       }
     })
 
+    console.log('Dados atualizados: https://docs.google.com/spreadsheets/d/1gQz-I9MPygcUo1nCtUoWXSOvIiZVedoWnj76A3dh6yA')
+    console.log('')
+
     await startPublishPooling(pulls)
   }
 }
 
 function toRows (pulls) {
   return [
-    ['Link', 'Author', 'Title', 'Team', 'Merged At'],
+    ['Link', 'Author', 'Title', 'Team', 'Created At', 'Merged At', 'Duration (business days)'],
     ...pulls.map(pull => {
       return [
-        pull.html_url,
-        pull.user.login,
+        pull.url,
+        pull.author?.login,
         pull.title,
-        getTeamByAssignee(pull.assignee?.login),
-        pull.mergedAt
+        getTeamByAssignee(pull.author?.login),
+        pull.createdAt,
+        pull.mergedAt,
+        pull.durationDays
       ]
     })
   ]
@@ -139,6 +169,7 @@ function toRows (pulls) {
 
 async function startPublishPooling (pulls) {
   console.log('Iniciando pooling de publicação')
+  console.log('')
 
   pulls = chain(pulls)
     .uniqBy(pull => pull.repository_url)
@@ -146,11 +177,9 @@ async function startPublishPooling (pulls) {
 
   while (true) {
     for (const pull of pulls) {
-      console.log('pull', pull.html_url)
-      const extractOwnerAndRepo = /https:\/\/github.com\/(.+?)\/(.+?)\//.exec(pull.html_url) || []
-
-      const owner = extractOwnerAndRepo[1]
-      const repo = extractOwnerAndRepo[2]
+      const extractOwnerAndRepo = pull.url.match(/https:\/\/github\.com\/(?<owner>.+?)\/(?<repo>.+?)\//)?.groups || {}
+      const owner = extractOwnerAndRepo.owner
+      const repo = extractOwnerAndRepo.repo
 
       const job = await githubFacade.listWorkflowJobs({
         owner,
@@ -162,13 +191,20 @@ async function startPublishPooling (pulls) {
       pull.conclusion = job?.conclusion
       pull.job_url = job?.html_url
 
-      console.log([coloredStatus(pull.status), coloredConclusion(pull.conclusion)].join(' '), pull.job_url)
+      console.log([coloredStatus(pull.status), coloredConclusion(pull.conclusion)].join(' '), pull.url, pull.job_url)
     }
 
-    pulls = pulls.filter((pull) => pull.isPublishing)
-    if (!pulls.length) break
-    console.log(new Date().toISOString(), 'Some PRs are still being published. Waiting 5 seconds to check again...')
-    await sleep(5000)
+    const isAllDone = pulls.every((pull) => !pull.isPublishing)
+
+    if (isAllDone) {
+      console.log(new Date().toISOString(), 'All PRs are published!')
+      break
+    }
+    console.log(new Date().toISOString(), 'Some PRs are still being published waiting...')
+    await sleep(1000)
+
+    const cleanLinesCount = pulls.length + 1
+    process.stdout.moveCursor(0, -cleanLinesCount)
   }
 }
 
