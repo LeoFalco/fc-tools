@@ -9,6 +9,7 @@ import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
 import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import { sheets } from '../../core/drive.js'
+import { format } from 'date-fns'
 
 class PrOpenedCommand {
   /**
@@ -49,11 +50,18 @@ class PrOpenedCommand {
 
     console.log('Membros selecionados:', assignees.join(', '))
     console.log('Membros de qualidade:', QUALITY_TEAM.join(', '))
+    const now = new Date()
+    const from = format(now, 'yyyy-MM-dd')
+    const fiveYearsAgo = now.setFullYear(now.getFullYear() - 5)
+    const to = format(fiveYearsAgo, 'yyyy-MM-dd')
+    console.log(`Buscando pull requests abertos do time ${team} de ${from} até ${to}...`)
 
-    const pulls = await githubFacade.listOpenPullRequestsV2({
+    const pulls = await githubFacade.listPullRequestsV2({
       assignees,
       organization: 'FieldControl',
-      state: 'OPEN'
+      state: 'OPEN',
+      from,
+      to
     }).then((pulls) => {
       return chain(pulls)
         .filter(isNotFreelance)

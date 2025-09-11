@@ -32,18 +32,19 @@ class PrMergedCommand {
 
   /**
    * @param {Object} options
-   * @param {string | undefined} options.from
-   * @param {string | undefined} options.to
    * @param {string | undefined} options.team
    */
-  async action (options) {
-    console.log('List pull requests options', options)
+  async promptTeam (options) {
+    if (options.team) {
+      if (TEAMS[options.team]) {
+        return options.team
+      }
 
-    const from = options.from ? options.from : undefined
-    const to = options.to ? options.to : undefined
+      console.warn(`Time ${options.team} não encontrado, por favor selecione um time da lista abaixo`)
+    }
 
     // @ts-ignore
-    const { startDate, endDate, team } = await inquirer.prompt([
+    const { team } = await inquirer.prompt([
       {
         type: 'list',
         message: 'Por favor selecione o time que deseja analisar',
@@ -51,56 +52,104 @@ class PrMergedCommand {
         choices: Object.keys(TEAMS),
         default: options.team || TEAMS.CMMS,
         validate: notNullValidator('Por favor selecione um time')
-      },
+      }
+    ])
+
+    return team
+  }
+
+  async promptFrom (options) {
+    if (options.from) {
+      if (options.from.toLowerCase() === 'today') {
+        return new Date().toISOString().split('T').shift()
+      }
+
+      if (dateValidator(options.from) === true) {
+        return dateFilter(options.from)
+      }
+
+      console.warn(`Data inicial ${options.from} inválida, por favor informe uma data válida`)
+    }
+
+    // @ts-ignore
+    const { from } = await inquirer.prompt([
       {
         type: 'input',
-        name: 'startDate',
+        name: 'from',
         message: 'Informe a data inicial no formato yyyy-mm-dd',
-        default: from || new Date().toISOString().split('T').shift(),
-        when () {
-          return !from
-        },
+        default: new Date().toISOString().split('T').shift(),
         validate: dateValidator,
         filter: dateFilter
-      },
+      }
+    ])
+
+    console.log('Data inicial selecionada:', from)
+
+    return from
+  }
+
+  async promptTo (options) {
+    if (options.to) {
+      if (options.to.toLowerCase() === 'today') {
+        return new Date().toISOString().split('T').shift()
+      }
+
+      if (dateValidator(options.to) === true) {
+        return dateFilter(options.to)
+      }
+
+      console.warn(`Data final ${options.to} inválida, por favor informe uma data válida`)
+    }
+
+    // @ts-ignore
+    const { to } = await inquirer.prompt([
       {
         type: 'input',
-        name: 'endDate',
+        name: 'to',
         message: 'Informe a data final no formato yyyy-mm-dd',
-        default: to || new Date().toISOString().split('T').shift(),
-        when () {
-          return !to
-        },
+        default: new Date().toISOString().split('T').shift(),
         validate: dateValidator,
         filter: dateFilter
       }
-    ]).catch((error) => {
-      if (error.message.includes('closed the prompt')) {
-        console.log('Operação cancelada pelo usuário')
-        process.exit(1)
-      }
+    ])
 
-      throw error
-    })
+    console.log('Data final selecionada:', to)
 
-    console.log('Analisando PRs do time', team, 'entre', startDate, 'e', endDate)
+    return to
+  }
+
+  /**
+   * @param {Object} options
+   * @param {string | undefined} options.from
+   * @param {string | undefined} options.to
+   * @param {string | undefined} options.team
+   */
+  async action (options) {
+    console.log('List pull requests options', options)
+
+    const team = await this.promptTeam(options)
+    const from = await this.promptFrom(options)
+    const to = await this.promptTo(options)
+
+    console.log('Analisando PRs do time', team, 'entre', from, 'e', to)
 
     const assignees = TEAMS[team]
 
-    const pulls = await githubFacade.listOpenPullRequestsV2({
+    const pulls = await githubFacade.listPullRequestsV2({
       assignees,
       state: 'MERGED',
-      organization: 'FieldControl'
+      organization: 'FieldControl',
+      from,
+      to
     }).then((pulls) => {
       return pulls.filter((pull) => {
         if (!pull.mergedAt) return false
         const mergedDate = pull.mergedAt.split('T').shift()
-        return mergedDate && mergedDate >= startDate && mergedDate <= endDate
+        return mergedDate && mergedDate >= from && mergedDate <= to
       })
     })
 
     for (const pull of pulls) {
-      console.log('PR:', pull)
       pull.createdAt = pull.createdAt && format(toZonedTime(parseISO(pull.createdAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
       pull.mergedAt = pull.mergedAt && format(toZonedTime(parseISO(pull.mergedAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
       pull.durationDays = pull.createdAt && pull.mergedAt
@@ -172,7 +221,7 @@ async function startPublishPooling (pulls) {
   console.log('')
 
   pulls = chain(pulls)
-    .uniqBy(pull => pull.repository_url)
+    .uniqBy(pull => pull.repository.name)
     .value()
 
   while (true) {
@@ -197,7 +246,9 @@ async function startPublishPooling (pulls) {
     const isAllDone = pulls.every((pull) => !pull.isPublishing)
 
     if (isAllDone) {
+      console.log('')
       console.log(new Date().toISOString(), 'All PRs are published!')
+      console.log('')
       break
     }
     console.log(new Date().toISOString(), 'Some PRs are still being published waiting...')

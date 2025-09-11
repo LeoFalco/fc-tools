@@ -1,5 +1,6 @@
 // @ts-check
 
+import { red } from '../utils/utils.js'
 import { octokit } from './octokit.js'
 
 const GET_PULL_REQUESTS = `#graphql
@@ -84,66 +85,6 @@ class GithubFacade {
   }
 
   /**
-   *
-   * @param {object} params
-   * @param {string} params.state
-   * @param {string} params.organization
-   * @param {string[]} params.assignees
-   * @returns
-   */
-  async listPullRequests (params) {
-    const LIST_MERGED_PULL_REQUESTS = `#graphql
-      query listPullRequests($organization: String!, $states: [PullRequestState!]) {
-        viewer {
-          organization(login: $organization) {
-            repositories(first: 40, isLocked: false, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
-              nodes {
-                id
-                name
-                pullRequests(first: 5, states: $states, orderBy: { field: UPDATED_AT, direction: DESC }) {
-                  nodes {
-                    id
-                    url
-                    mergedAt
-                    state
-                    title
-                    author {
-                      login
-                    }
-                    repository {
-                      name
-                      owner {
-                        login
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `
-
-    const data = await octokit.graphql(LIST_MERGED_PULL_REQUESTS, {
-      organization: params.organization,
-      states: [params.state]
-    })
-
-    const pulls = data.viewer.organization.repositories.nodes
-      .reduce((acc, repo) => acc.concat(repo.pullRequests.nodes), [])
-      .filter((pull) => isAutorInSelectedAssigneeList(pull, params.assignees))
-
-    await Promise.all(
-      pulls.map(async (pull) => {
-        pull.checks = pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
-      })
-    )
-
-    return pulls
-  }
-
-  /**
    * @param {object} params
    * @param {string} params.owner
    * @param {string} params.repo
@@ -170,27 +111,33 @@ class GithubFacade {
    * @param {string} params.organization
    * @param {string[]} params.assignees
    * @param {string} params.state - 'OPEN' or 'CLOSED'
+   * @param {string} params.from - 'YYYY-MM-DD'
+   * @param {string} params.to - 'YYYY-MM-DD'
    * @returns
    */
-  async listOpenPullRequestsV2 (params) {
-    // Use GraphQL to fetch PRs for each assignee
-    const LIST_PRS = `#graphql
-      query listPullRequestsByState($organization: String!, $states: [PullRequestState!]) {
-        viewer {
-          organization(login: $organization) {
-            repositories(first: 40, isLocked: false, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
-              nodes {
+  async listPullRequestsV2 (params) {
+    const LIST_PRS_V2 = `#graphql
+      query listPullRequestsByState($searchQuery: String!) {
+        search(
+          type: ISSUE
+          query: $searchQuery
+          first: 100
+        ) {
+          issueCount
+          nodes {
+            ... on PullRequest {
+              id
+              url
+              mergedAt
+              state
+              title
+              author {
+                login
+              }
+              repository {
                 name
-                pullRequests(first: 10, states: $states, orderBy: { field: UPDATED_AT, direction: DESC }) {
-                  nodes {
-                    id
-                    url
-                    mergedAt
-                    state
-                    title
-                    author { login }
-                    repository { name owner { login } }
-                  }
+                owner {
+                  login
                 }
               }
             }
@@ -199,27 +146,29 @@ class GithubFacade {
       }
     `
 
-    const state = params.state === 'MERGED' ? 'MERGED' : params.state
     const pulls = []
-    try {
-      const data = await octokit.graphql(LIST_PRS, {
-        organization: params.organization,
-        states: [state]
-      })
-      const repoNodes = data.viewer.organization.repositories.nodes
-      for (const repo of repoNodes) {
-        for (const pr of repo.pullRequests.nodes) {
+    for (const assignee of params.assignees) {
+      try {
+        const searchQuery = `is:pr sort:merged-desc org:${params.organization} is:${params.state.toLowerCase()} merged:${params.from}..${params.to} author:${assignee}`
+        console.log('searchQuery', searchQuery)
+        const data = await octokit.graphql(LIST_PRS_V2, {
+          searchQuery
+        })
+
+        console.log(`Total de pull requests encontrados na busca: ${data.search.issueCount}`)
+
+        for (const pr of data.search.nodes) {
           pulls.push({
             number: pr.url.split('/').pop(),
-            repo: repo.name,
+            repo: pr.repository.name,
             url: pr.url,
             mergedAt: pr.mergedAt,
             author: pr.author?.login
           })
         }
+      } catch (error) {
+        console.warn(red('Erro ao buscar pull requests:' + error.message))
       }
-    } catch (error) {
-      console.warn('Erro ao buscar pull requests:', error.message)
     }
 
     // Filter by assignees
@@ -231,22 +180,29 @@ class GithubFacade {
       filteredPulls = filteredByAssignee.filter(pr => pr.mergedAt)
     }
 
+    let pending = filteredPulls.length
+    console.log(`Encontradas ${pending} pull requests para os assignees selecionados.`)
+
     return Promise.all(
       filteredPulls.map(async (pull) => {
-        console.log(`consultando pull ${pull.url}`)
         return octokit.graphql(GET_PULL_REQUESTS, {
           organization: params.organization,
           repository: pull.repo,
           number: parseInt(pull.number)
-        }).then((response) => response.viewer.organization.repository.pullRequest)
+        }).then((response) => {
+          console.log(`consultado pull ${pull.url} (${--pending} restantes)`)
+          return response.viewer.organization.repository.pullRequest
+        })
       })
     ).then((pulls) => {
+      console.log('Todos os pulls foram consultados, buscando checks...')
+      let pending = pulls.length
       return Promise.all(
         pulls.map(async (pull) => {
-          console.log(`consultando check ${pull.url}`)
           Object.assign(pull, {
             checks: pull.headRef ? await getChecks('FieldControl', pull.repository.name, pull.headRef.target.oid) : []
           })
+          console.log(`check consultado ${pull.url} (${--pending} restantes)`)
           return pull
         })
       )
@@ -289,12 +245,6 @@ class GithubFacade {
       pull_number: number
     })
   }
-}
-
-function isAutorInSelectedAssigneeList (pull, selectedAssignees) {
-  return selectedAssignees.some((login) => {
-    return (pull.author && login === pull.author?.login) || (pull.user && login === pull.user.login)
-  })
 }
 
 export const getChecks = async (owner, repo, ref) => {
