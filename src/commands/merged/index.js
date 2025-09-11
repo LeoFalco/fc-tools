@@ -150,6 +150,7 @@ class PrMergedCommand {
     })
 
     for (const pull of pulls) {
+      pull.title = pull.title.substring(0, 80) + (pull.title.length > 80 ? '...' : '')
       pull.createdAt = pull.createdAt && format(toZonedTime(parseISO(pull.createdAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
       pull.mergedAt = pull.mergedAt && format(toZonedTime(parseISO(pull.mergedAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
       pull.durationDays = pull.createdAt && pull.mergedAt
@@ -192,6 +193,7 @@ class PrMergedCommand {
       }
     })
 
+    console.log('')
     console.log('Dados atualizados: https://docs.google.com/spreadsheets/d/1gQz-I9MPygcUo1nCtUoWXSOvIiZVedoWnj76A3dh6yA')
     console.log('')
 
@@ -247,7 +249,7 @@ async function startPublishPooling (pulls) {
 
     if (isAllDone) {
       console.log('')
-      console.log(new Date().toISOString(), 'All PRs are published!')
+      console.log(new Date().toISOString(), 'All jobs are completed!')
       console.log('')
       break
     }
