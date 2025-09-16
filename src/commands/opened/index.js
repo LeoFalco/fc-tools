@@ -3,7 +3,7 @@
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
 import inquirer from 'inquirer'
-import { chain, map, mean, sum } from 'lodash-es'
+import { chain, map, mean, stubString, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
@@ -107,8 +107,7 @@ class PrOpenedCommand {
         { field: 'checks', name: chalk.cyan('Checks') },
         { field: 'review', name: chalk.cyan('Review') },
         { field: 'notRejected', name: chalk.cyan('Approved') },
-        { field: 'quality', name: chalk.cyan('Quality') },
-        { field: 'team', name: chalk.cyan('Team') }
+        { field: 'quality', name: chalk.cyan('Quality') }
       ]
     }, pulls.map((pull) => {
       return {
@@ -120,8 +119,7 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
-        title: pull.title,
-        team: getTeamByAssignee(pull.author?.login)
+        title: pull.title.substring(0, 80) + (pull.title.length > 80 ? '...' : '')
       }
     })))
 

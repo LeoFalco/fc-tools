@@ -150,8 +150,11 @@ class GithubFacade {
     // for (const assignee of params.assignees) {
     try {
       // const searchQuery = `is:pr sort:merged-desc org:${params.organization} is:${params.state.toLowerCase()} merged:${params.from}..${params.to} author:${assignee}`
-      const searchQuery = `is:pr org:${params.organization} is:${params.state.toLowerCase()} merged:${params.from}..${params.to}`
-      console.log('searchQuery', searchQuery)
+      const state = params.state.toLowerCase()
+      const searchQuery = state === 'merged'
+        ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc`
+        : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc`
+      console.log('Query', searchQuery)
       const data = await octokit.graphql(LIST_PRS_V2, {
         searchQuery
       })
@@ -183,8 +186,9 @@ class GithubFacade {
       filteredPulls = filteredByAssignee.filter(pr => pr.mergedAt)
     }
 
+    console.log(`Filtrado ${filteredPulls.length} pull requests para os assignees selecionados.`)
+
     let pending = filteredPulls.length
-    console.log(`Encontradas ${pending} pull requests para os assignees selecionados.`)
 
     return Promise.all(
       filteredPulls.map(async (pull) => {
