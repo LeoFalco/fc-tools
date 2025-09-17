@@ -232,15 +232,16 @@ async function startPublishPooling (pulls) {
       const owner = extractOwnerAndRepo.owner
       const repo = extractOwnerAndRepo.repo
 
-      const job = await githubFacade.listWorkflowJobs({
-        owner,
-        repo
-      })
-
-      pull.isPublishing = job ? job.status !== 'completed' : false
-      pull.status = job?.status
-      pull.conclusion = job?.conclusion
-      pull.job_url = job?.html_url
+      if (pull.isPublishing === undefined || pull.isPublishing === true) {
+        const job = await githubFacade.listWorkflowJobs({
+          owner,
+          repo
+        })
+        pull.isPublishing = job ? job.status !== 'completed' : false
+        pull.status = job?.status
+        pull.conclusion = job?.conclusion
+        pull.job_url = job?.html_url
+      }
 
       console.log([coloredStatus(pull.status), coloredConclusion(pull.conclusion)].join(' '), pull.url, pull.job_url)
     }
