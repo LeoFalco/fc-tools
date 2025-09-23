@@ -226,6 +226,12 @@ async function startPublishPooling (pulls) {
     .uniqBy(pull => pull.repository.name)
     .value()
 
+  const updatedRepositoryNames = pulls.map(pull => pull.repository.name)
+  console.log('Repositórios alterados:')
+  for (const updatedRepositoryName of updatedRepositoryNames) {
+    console.log(' -', updatedRepositoryName)
+  }
+
   while (true) {
     for (const pull of pulls) {
       const extractOwnerAndRepo = pull.url.match(/https:\/\/github\.com\/(?<owner>.+?)\/(?<repo>.+?)\//)?.groups || {}
