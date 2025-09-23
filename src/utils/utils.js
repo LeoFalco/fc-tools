@@ -9,7 +9,7 @@ export function isReady (pull) {
 }
 
 export function isApproved (pull) {
-  return pull.reviewDecision === 'APPROVED'
+  return pull.reviewDecision === 'APPROVED' || pull.state === 'MERGED'
 }
 
 export function isRejected (pull) {

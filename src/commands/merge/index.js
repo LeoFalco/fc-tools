@@ -30,6 +30,8 @@ class PrMergeCommand {
 
   /**
    * @param {Object} options
+   * @param {boolean} options.flux
+   * @param {boolean} options.confirm
    */
   async action (options) {
     if (options.flux) {
@@ -39,6 +41,11 @@ class PrMergeCommand {
     }
   }
 
+  /**
+   * @param {Object} options
+   * @param {boolean} options.flux
+   * @param {boolean} options.confirm
+   */
   async actionWithFlux (options) {
     console.log(blue('Using flux find pull requests'))
 
@@ -81,6 +88,11 @@ class PrMergeCommand {
     console.log('  field merged --from=today --to=today --team=CMMS')
   }
 
+  /**
+   * @param {Object} options
+   * @param {boolean} options.flux
+   * @param {boolean} options.confirm
+   */
   async actionWithoutFlux (options) {
     const currentBranch = await $('git branch --show-current')
     await $('gh pr review --approve', { reject: false })
@@ -95,6 +107,7 @@ class PrMergeCommand {
 
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
 
+// @ts-ignore
 async function extractPrData (card) {
   card.name = card.name.trim()
   card.pullRequests = []
@@ -173,7 +186,8 @@ async function extractPrData (card) {
 
 async function mergeCardPrs (card, options) {
   console.log('----------------------------------')
-  console.log('Merging prs')
+  console.log('Card:', card.name)
+  console.log('Merging card pull requests')
 
   if (card.pullRequests.length === 0) {
     console.log(yellow('  No pull requests found'))
@@ -185,7 +199,7 @@ async function mergeCardPrs (card, options) {
       repo: pullRequest.repo,
       number: pullRequest.number
     }).catch(err => {
-      console.log(yellow('    Rebase failed' + err.message))
+      console.log(yellow('    Rebase failed ' + err.message))
     })
 
     if (!pullRequest.$metadata.publish) {
