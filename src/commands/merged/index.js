@@ -225,12 +225,15 @@ async function startPublishPooling (pulls) {
   pulls = chain(pulls)
     .uniqBy(pull => pull.repository.name)
     .value()
+    .sort((a, b) => a.repository.name.localeCompare(b.repository.name))
 
   const updatedRepositoryNames = pulls.map(pull => pull.repository.name)
   console.log('Repositórios alterados:')
   for (const updatedRepositoryName of updatedRepositoryNames) {
     console.log(' -', updatedRepositoryName)
   }
+
+  console.log('')
 
   while (true) {
     for (const pull of pulls) {
