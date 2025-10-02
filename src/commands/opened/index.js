@@ -2,14 +2,14 @@
 
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
+import { format } from 'date-fns'
 import inquirer from 'inquirer'
-import { chain, map, mean, stubString, sum } from 'lodash-es'
+import { chain, map, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
+import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { notNullValidator } from '../../core/validators.js'
-import { calcAge, getTeamByAssignee, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
-import { sheets } from '../../core/drive.js'
-import { format } from 'date-fns'
+import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 
 class PrOpenedCommand {
   /**
@@ -27,24 +27,41 @@ class PrOpenedCommand {
   }
 
   /**
-   * @param {Object} options
-   * @param {boolean | undefined} options.team
-   */
-  async action (options) {
+     * @param {Object} options
+     * @param {string | undefined} options.team
+     */
+  async promptTeam (options) {
+    if (options.team) {
+      // @ts-ignore
+      if (TEAMS[options.team]) {
+        return options.team
+      }
+
+      console.warn(`Time ${options.team} não encontrado, por favor selecione um time da lista abaixo`)
+    }
+
     // @ts-ignore
-    const team = options.team || await inquirer.prompt([
+    const { team } = await inquirer.prompt([
       {
         type: 'list',
         message: 'Por favor selecione o time que deseja analisar',
         name: 'team',
         choices: Object.keys(TEAMS),
+        default: options.team || TEAMS.CMMS,
         validate: notNullValidator('Por favor selecione um time')
       }
-    ]).then((answers) => answers.team)
+    ])
 
-    if (!TEAMS[team]) {
-      throw new Error('Time não encontrado')
-    }
+    return team
+  }
+
+  /**
+   * @param {Object} options
+   * @param {boolean | undefined} options.team
+   */
+  async action (options) {
+    // @ts-ignore
+    const team = await this.promptTeam(options)
 
     const assignees = TEAMS[team]
 

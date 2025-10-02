@@ -1,14 +1,12 @@
 const CMMS_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
   'lilian-caballero',
-  'tauk7',
-  'cesarfield'
+  'tauk7'
 ]
 
 const CMMS_MAINTENANCE_TEAM_MEMBERS = [
   'eduamorimm',
-  'pedroaugusto2002',
-  'guilherme-carmona'
+  'pedroaugusto2002'
 ]
 
 const FSM_PROJECT_TEAM_MEMBERS = [
