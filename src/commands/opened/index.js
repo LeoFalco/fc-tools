@@ -3,13 +3,12 @@
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
 import { format } from 'date-fns'
-import inquirer from 'inquirer'
 import { chain, map, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
-import { notNullValidator } from '../../core/validators.js'
 import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { promptTeam } from '../../utils/prompt-team.js'
 
 class PrOpenedCommand {
   /**
@@ -27,41 +26,12 @@ class PrOpenedCommand {
   }
 
   /**
-     * @param {Object} options
-     * @param {string | undefined} options.team
-     */
-  async promptTeam (options) {
-    if (options.team) {
-      // @ts-ignore
-      if (TEAMS[options.team]) {
-        return options.team
-      }
-
-      console.warn(`Time ${options.team} não encontrado, por favor selecione um time da lista abaixo`)
-    }
-
-    // @ts-ignore
-    const { team } = await inquirer.prompt([
-      {
-        type: 'list',
-        message: 'Por favor selecione o time que deseja analisar',
-        name: 'team',
-        choices: Object.keys(TEAMS),
-        default: options.team || TEAMS.CMMS,
-        validate: notNullValidator('Por favor selecione um time')
-      }
-    ])
-
-    return team
-  }
-
-  /**
    * @param {Object} options
    * @param {boolean | undefined} options.team
    */
   async action (options) {
     // @ts-ignore
-    const team = await this.promptTeam(options)
+    const team = await promptTeam(options)
 
     const assignees = TEAMS[team]
 

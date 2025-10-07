@@ -8,10 +8,9 @@ import { chain } from 'lodash-es'
 import { TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
-import { dateFilter, dateValidator, notNullValidator } from '../../core/validators.js'
+import { promptFrom, promptTeam, promptTo } from '../../utils/prompt-team.js'
 import { sleep } from '../../utils/sleep.js'
 import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
-import inquirer from 'inquirer'
 
 class PrMergedCommand {
   /**
@@ -32,94 +31,6 @@ class PrMergedCommand {
 
   /**
    * @param {Object} options
-   * @param {string | undefined} options.team
-   */
-  async promptTeam (options) {
-    if (options.team) {
-      if (TEAMS[options.team]) {
-        return options.team
-      }
-
-      console.warn(`Time ${options.team} não encontrado, por favor selecione um time da lista abaixo`)
-    }
-
-    // @ts-ignore
-    const { team } = await inquirer.prompt([
-      {
-        type: 'list',
-        message: 'Por favor selecione o time que deseja analisar',
-        name: 'team',
-        choices: Object.keys(TEAMS),
-        default: options.team || TEAMS.CMMS,
-        validate: notNullValidator('Por favor selecione um time')
-      }
-    ])
-
-    return team
-  }
-
-  async promptFrom (options) {
-    if (options.from) {
-      if (options.from.toLowerCase() === 'today') {
-        return new Date().toISOString().split('T').shift()
-      }
-
-      if (dateValidator(options.from) === true) {
-        return dateFilter(options.from)
-      }
-
-      console.warn(`Data inicial ${options.from} inválida, por favor informe uma data válida`)
-    }
-
-    // @ts-ignore
-    const { from } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'from',
-        message: 'Informe a data inicial no formato yyyy-mm-dd',
-        default: new Date().toISOString().split('T').shift(),
-        validate: dateValidator,
-        filter: dateFilter
-      }
-    ])
-
-    console.log('Data inicial selecionada:', from)
-
-    return from
-  }
-
-  async promptTo (options) {
-    if (options.to) {
-      if (options.to.toLowerCase() === 'today') {
-        return new Date().toISOString().split('T').shift()
-      }
-
-      if (dateValidator(options.to) === true) {
-        return dateFilter(options.to)
-      }
-
-      console.warn(`Data final ${options.to} inválida, por favor informe uma data válida`)
-    }
-
-    // @ts-ignore
-    const { to } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'to',
-        message: 'Informe a data final no formato yyyy-mm-dd',
-        default: new Date().toISOString().split('T').shift(),
-        validate: dateValidator,
-        filter: dateFilter
-      }
-    ])
-
-    console.log('Data final selecionada:', to)
-
-    return to
-  }
-
-  /**
-   * @param {Object} options
    * @param {string | undefined} options.from
    * @param {string | undefined} options.to
    * @param {string | undefined} options.team
@@ -127,9 +38,9 @@ class PrMergedCommand {
   async action (options) {
     console.log('List pull requests options', options)
 
-    const team = await this.promptTeam(options)
-    const from = await this.promptFrom(options)
-    const to = await this.promptTo(options)
+    const team = await promptTeam(options)
+    const from = await promptFrom(options)
+    const to = await promptTo(options)
 
     console.log('Analisando PRs do time', team, 'entre', from, 'e', to)
 
