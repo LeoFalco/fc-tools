@@ -1,8 +1,8 @@
 // @ts-check
 
 import inquirer from 'inquirer'
-import { TEAMS } from '../core/constants'
-import { dateFilter, dateValidator, notNullValidator } from '../core/validators'
+import { TEAMS } from '../core/constants.js'
+import { dateFilter, dateValidator, notNullValidator } from '../core/validators.js'
 
 /**
  * @param {Object} options

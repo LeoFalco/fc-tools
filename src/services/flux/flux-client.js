@@ -9,7 +9,8 @@ const client = axios.create({
 
 export const STAGES = Object.freeze({
   PUBLISH: 'b15af340-425c-444f-8fc6-8187e2b3010b',
-  MERGED: '197e0fd9-ef45-4baa-94aa-e50b2a86b9d5'
+  MERGED: '197e0fd9-ef45-4baa-94aa-e50b2a86b9d5',
+  LIVE: '90c58464-98f9-48e7-82de-1e4f21b3569d'
 })
 
 client.interceptors.request.use((config) => {
@@ -17,7 +18,7 @@ client.interceptors.request.use((config) => {
   return config
 })
 
-// intercept errors and log graphq errors if exists
+// intercept errors and log graphql errors if exists
 client.interceptors.response.use(
   response => {
     if (response.data.errors) {
@@ -161,6 +162,25 @@ class FluxClient {
     })
 
     return response.data.data.card.fields
+  }
+
+  async archiveCard ({ cardId }) {
+    const response = await client.post('', {
+      operationName: 'ArchiveCard',
+      variables: {
+        id: cardId
+      },
+      query: `#graphql
+        mutation ArchiveCard($id: ID!) {
+          archiveCard(id: $id) {
+            id
+            __typename
+          }
+        }
+      `
+    })
+
+    return response.data.data.archiveCard
   }
 }
 

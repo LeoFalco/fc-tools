@@ -9,7 +9,6 @@ import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import chalk from 'chalk'
 const { red, yellow, green, gray, blue } = chalk
-// const { red, yellow, green, gray, blue } = chalk
 
 class PrMergeCommand {
   /**
