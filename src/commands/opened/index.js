@@ -106,7 +106,7 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
-        title: pull.title.substring(0, 80) + (pull.title.length > 80 ? '...' : '')
+        title: pull.title.substring(0, 60) + (pull.title.length > 60 ? '...' : '')
       }
     })))
 
@@ -117,14 +117,14 @@ class PrOpenedCommand {
     console.log('Meus PRs')
     console.log(chalkTable({
       columns: [
-        { field: 'link', name: chalk.cyan('Link') },
+        { field: 'link', name: chalk.cyan('Url') },
         { field: 'title', name: chalk.cyan('Title') },
         { field: 'ready', name: chalk.cyan('Draft') },
-        { field: 'mergeable', name: chalk.cyan('Mergeable') },
-        { field: 'checks', name: chalk.cyan('Checks') },
+        { field: 'mergeable', name: chalk.cyan('Merge') },
+        { field: 'checks', name: chalk.cyan('Check') },
         { field: 'review', name: chalk.cyan('Review') },
-        { field: 'notRejected', name: chalk.cyan('Approved') },
-        { field: 'quality', name: chalk.cyan('Quality') }
+        { field: 'notRejected', name: chalk.cyan('Approve') },
+        { field: 'quality', name: chalk.cyan('Qa') }
       ]
     }, myPulls.map((pull) => {
       return {

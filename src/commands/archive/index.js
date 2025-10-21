@@ -37,7 +37,7 @@ class ArchiveCommand {
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.LIVE,
-      take: 10,
+      take: 100,
       skip: 0
     })
 
@@ -78,6 +78,6 @@ async function archiveCard (card) {
     cardId: card.id
   })
 
-  console.log('-', card.name, green('  Card moved'))
+  console.log('-', card.name, green('  Card archived'))
 }
 export default new ArchiveCommand()
