@@ -8,7 +8,7 @@ import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
-import { promptTeam } from '../../utils/prompt-team.js'
+import { promptTeam } from '../../utils/prompt.js'
 
 class PrOpenedCommand {
   /**

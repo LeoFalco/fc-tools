@@ -1,6 +1,5 @@
 // @ts-check
 
-import inquirer from 'inquirer'
 import { uniqBy } from 'lodash-es'
 import { QUALITY_TEAM } from '../../core/constants.js'
 import { $ } from '../../core/exec.js'
@@ -8,6 +7,8 @@ import { githubFacade } from '../../core/githubFacade.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
 import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import chalk from 'chalk'
+import { promptConfirm } from '../../utils/prompt.js'
+import { sleep } from '../../utils/sleep.js'
 const { red, yellow, green, gray, blue } = chalk
 
 class PrMergeCommand {
@@ -25,12 +26,15 @@ class PrMergeCommand {
       .option('--flux', 'merge pull request with flux')
       .option('--confirm', 'execute merge without confirmation')
       .option('--continue', 'continue merging after a failed merge', false)
+      .option('--refresh', 'refresh pull request data while merging', false)
   }
 
   /**
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
+   * @param {boolean} options.continue
+   * @param {boolean} options.refresh
    */
   async action (options) {
     if (options.flux) {
@@ -44,13 +48,14 @@ class PrMergeCommand {
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
+   * @param {boolean} options.continue
+   * @param {boolean} options.refresh
    */
   async actionWithFlux (options) {
     console.log(blue('Using flux find pull requests'))
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.PUBLISH,
-      // stageId: STAGES.MERGED,
       take: 10,
       skip: 0
     })
@@ -64,27 +69,43 @@ class PrMergeCommand {
       await extractPrData(card)
     }
 
-    const confirmed = options.confirm || await inquirer.prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Found ${cards.length} cards. Do you want to merge them?`,
-      default: false
-    }).then(answer => answer.confirm)
+    console.log(blue(`Found ${cards.length} cards. Do you want to merge them?`))
 
-    if (!confirmed) {
-      console.log('Merge operation not confirmed exiting.')
-      return
+    const confirmed = await Promise.race([
+      promptConfirm(options),
+      sleep(5000)
+    ])
+
+    if (confirmed) {
+      for (const card of cards) {
+        await mergeCardPrs(card, options)
+        await moveCardToMergedStage(card)
+      }
+
+      console.log(green('All done!'))
+      console.log('You can check the cards at https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table')
+      console.log('you can check the jobs with')
+      console.log('  field merged --from=today --to=today --team=CMMS')
+
+      const everyCardMoved = cards.every(card => card.moved === true)
+      if (everyCardMoved) {
+        console.log(green('All cards were moved to merged stage'))
+        process.exit(0)
+      } else {
+        console.log(yellow('Some cards were not moved to merged stage'))
+      }
+    } else {
+      console.log('Merge operation not confirmed')
     }
 
-    for (const card of cards) {
-      await mergeCardPrs(card, options)
-      await moveCardToMergedStage(card)
+    if (options.refresh) {
+      console.log(blue('Refreshing pull request data...'))
+      console.clear()
+      if (options.confirm) {
+        await sleep(1000)
+      }
+      this.actionWithFlux(options)
     }
-
-    console.log(green('All done!'))
-    console.log('You can check the cards at https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table')
-    console.log('you can check the jobs with')
-    console.log('  field merged --from=today --to=today --team=CMMS')
   }
 
   /**
@@ -114,6 +135,7 @@ async function extractPrData (card) {
   card.fields = await fluxClient.getCardFields({ cardId: card.id })
     .then(fields => fields.filter(f => f.title && f.value))
 
+  console.log('---------------------------------')
   console.log(blue('Card:', card.name))
 
   const description = String(card.description || '')
@@ -197,8 +219,8 @@ async function mergeCardPrs (card, options) {
       owner: pullRequest.owner,
       repo: pullRequest.repo,
       number: pullRequest.number
-    }).catch(err => {
-      console.log(yellow('    Rebase failed ' + err.message))
+    }).catch(() => {
+      console.log(yellow('    [ignored] Rebase failed'))
     })
 
     if (!pullRequest.$metadata.publish) {
@@ -245,6 +267,17 @@ async function mergeCardPrs (card, options) {
   }
 }
 
+/**
+ *
+ * @param {Object} card
+ * @param {string} card.id
+ * @param {string} card.name
+ * @param {Array<{ owner: string; repo: string; number: number; }>} card.pullRequests
+ * @param {Object} card.currentStage
+ * @param {string} card.currentStage.id
+ *
+ * @returns {Promise<boolean>} - returns true if the card was moved, false otherwise
+ */
 async function moveCardToMergedStage (card) {
   console.log('Moving card to published stage')
 
@@ -261,7 +294,7 @@ async function moveCardToMergedStage (card) {
 
   if (!everyPullRequestIsMergedOrClosed) {
     console.log(red('  Skipped stage change'))
-    return
+    return false
   }
 
   await fluxClient.moveCardToStage({
@@ -272,5 +305,11 @@ async function moveCardToMergedStage (card) {
   })
 
   console.log(green('  Card moved'))
+
+  Object.assign(card, {
+    moved: true
+  })
+
+  return true
 }
 export default new PrMergeCommand()

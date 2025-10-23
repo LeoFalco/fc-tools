@@ -2,6 +2,9 @@
 
 import { red } from '../utils/utils.js'
 import { octokit } from './octokit.js'
+import chalk from 'chalk'
+
+const { yellow } = chalk
 
 const GET_PULL_REQUESTS = `#graphql
       query listPullRequests($organization: String!, $repository: String!, $number: Int!) {
@@ -235,8 +238,8 @@ class GithubFacade {
       repo,
       base: baseRef,
       head: headRef
-    }).catch((error) => {
-      console.warn('Error comparing commits:', error.status, error.message)
+    }).catch(() => {
+      console.log(yellow('[ignored] Could not can check if PR is ahead of base'))
       return null
     })
 

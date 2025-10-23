@@ -8,7 +8,7 @@ import { chain } from 'lodash-es'
 import { TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
-import { promptFrom, promptTeam, promptTo } from '../../utils/prompt-team.js'
+import { promptFrom, promptTeam, promptTo } from '../../utils/prompt.js'
 import { sleep } from '../../utils/sleep.js'
 import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
 

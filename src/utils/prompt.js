@@ -110,3 +110,20 @@ export async function promptTo (options) {
 
   return to
 }
+
+/**
+ * @param {Object} options
+ * @param {boolean} options.confirm
+ */
+export async function promptConfirm (options) {
+  if (options.confirm) return true
+
+  const answer = await inquirer.prompt({
+    type: 'confirm',
+    name: 'confirm',
+    message: 'Are you sure you want to proceed?',
+    default: false
+  })
+
+  return answer.confirm
+}
