@@ -41,7 +41,7 @@
     "axios": "1.11.0",
     "chalk": "5.5.0",
     "chalk-table": "1.0.2",
-    "commander": "14.0.0",
+    "commander": "14.0.2",
     "date-fns": "4.1.0",
     "date-fns-tz": "3.2.0",
     "dotenv": "17.2.1",
