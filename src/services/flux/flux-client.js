@@ -13,6 +13,10 @@ export const STAGES = Object.freeze({
   LIVE: '90c58464-98f9-48e7-82de-1e4f21b3569d'
 })
 
+export const PIPES = Object.freeze({
+  CMMS_PROJECT: 'e1e2a518-ad83-4a3b-8fd6-3b42bd4d5151'
+})
+
 client.interceptors.request.use((config) => {
   config.headers.Authorization = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyZTA2OTEwLWY1MDctNDIyOC1iMzEzLWJlYjlhYzljZGMwMyIsImFjY291bnRfaWQiOiJmNGQyZDdmMy05OGIyLTRhNWQtOTg1Zi0xZjZjMThkM2JkZWUiLCJuYW1lIjoiTGVvIEZhbGNvIiwiZW1haWwiOiJsZW9uYXJkb0BmaWVsZGNvbnRyb2wuY29tLmJyIiwiZW1haWxfdmFsaWRhdGVkX2F0IjpudWxsLCJsYXN0X3NlZW5fYXQiOm51bGwsImxhbmd1YWdlIjoicHQtQlIiLCJjcmVhdGVkX2F0IjoiMjAyNC0wOC0zMVQxOToyMzo1OC4wNzdaIiwidXBkYXRlZF9hdCI6IjIwMjQtMDgtMzFUMTk6MjM6NTguMDc3WiIsImF2YXRhcl91cmwiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKQkJTeTJ2dTFkRjI5LUhmRmRSU1RPYTY2RUFvLWl0eDV5U2RnbW51SHlhWFF2Z0RrPXM5Ni1jIiwiaXNfb3duZXIiOmZhbHNlLCJkZWxldGVkX2F0IjpudWxsLCJlbWFpbF9jb21tdW5pY2F0aW9uX2Rpc2FibGVkIjpmYWxzZSwiaWF0IjoxNzU1MTc0MTI3LCJleHAiOjE3NTU0MzMzMjcsImF1ZCI6ImF1ZDpjbGllbnQiLCJpc3MiOiJodHRwczovL2lzZW5nYXJkLmZsdXhjb250cm9sLmNvbS5iciJ9.JqlhDeWuougTIcocfCxZoDYqk48U8u_POhm30i2pNmg'
   return config
@@ -41,13 +45,15 @@ class FluxClient {
    *
    * @param {Object} params
    * @param {string} params.stageId - ID of the stage to fetch cards from
+   * @param {string[]} [params.labelsIds] - Types of labels to filter cards
+   * @param {archived} [params.archived] - Whether to include archived cards (default: false)
    * @param {number} [params.take] - Number of items to fetch (default: 10)
    * @param {number} [params.skip] - Number of items to skip (default: 0)
    * @returns {Promise<Array>}
    * @description Fetches unopened cards from a specific stage in Flux.
    * @returns
    */
-  async getUnopenedCards ({ stageId, skip = 0, take = 10 }) {
+  async getUnopenedCards ({ stageId, skip = 0, take = 10, labelsIds = [], archived = false }) {
     const response = await client.post('', {
       operationName: 'GetUnopenedCards',
       variables: {
@@ -56,7 +62,9 @@ class FluxClient {
         sort: { field: 'index', order: 'asc' },
         skip,
         where: {
-          archived: false
+          labelsFilterBehavior: 'some',
+          archived,
+          labelsIds
         }
       },
       query: `#graphql
@@ -181,6 +189,30 @@ class FluxClient {
     })
 
     return response.data.data.archiveCard
+  }
+
+  async getPipe ({ pipeId }) {
+    console.log('Fetching pipe with ID:', pipeId)
+    const response = await client.post('', {
+      operationName: 'GetPipe',
+      variables: {
+        pipeId
+      },
+      query: `#graphql
+        query GetPipe($pipeId: ID!) {
+          pipe(pipeId: $pipeId) {
+            id
+            name
+            stages {
+              id
+              name
+            }
+          }
+        }
+      `
+    })
+
+    return response.data.data.pipe
   }
 }
 
