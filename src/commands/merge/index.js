@@ -116,11 +116,25 @@ class PrMergeCommand {
   async actionWithoutFlux (options) {
     const currentBranch = await $('git branch --show-current')
     await $('gh pr review --approve', { reject: false })
-    await $('gh pr merge -d -r --admin')
-    await $(`git branch -D ${currentBranch}`, { reject: false })
-    await $('git remote prune origin')
-    await $('npm install')
 
+    await $('git checkout master')
+    await $('git pull origin master')
+    await $('git checkout ' + currentBranch)
+    await $('git rebase master')
+
+    console.log(blue(`Ready to merge branch ${currentBranch} into master`))
+    const confirmMerge = await promptConfirm({
+      confirm: options.confirm
+    })
+
+    if (!confirmMerge) {
+      console.log('Merge operation not confirmed')
+      return
+    }
+
+    await $('git checkout master')
+    await $('git merge ' + currentBranch)
+    await $('git push origin master')
     console.log('PR merged successfully')
   }
 }
@@ -133,14 +147,16 @@ async function extractPrData (card) {
   card.pullRequests = []
 
   card.fields = await fluxClient.getCardFields({ cardId: card.id })
-    .then(fields => fields.filter(f => f.title && f.value))
+    // @ts-ignore
+    .then(fields => fields.filter(field => field.title && field.value))
 
   console.log('---------------------------------')
   console.log(blue('Card:', card.name))
 
   const description = String(card.description || '')
     .concat('\n\n')
-    .concat(card.fields.map(f => f.name + ': ' + f.value).join('\n'))
+    // @ts-ignore
+    .concat(card.fields.map(field => field.name + ': ' + field.value).join('\n'))
 
   for (const match of description.matchAll(githubPrUrlRegex)) {
     if (match.groups == null) continue
@@ -194,6 +210,9 @@ async function extractPrData (card) {
   }
 
   card.pullRequests.forEach((pull) => {
+    /**
+     * @type {string[]}
+     */
     const notes = []
     Object.entries(pull.$metadata).forEach(([key, value]) => {
       notes.push(coloredBoolean({ [key]: value }))
@@ -205,6 +224,10 @@ async function extractPrData (card) {
   return card
 }
 
+/**
+ * @param {{ name: any; pullRequests: string | any[]; id: any; }} card
+ * @param {{ flux?: boolean; confirm?: boolean; continue: any; refresh?: boolean; }} options
+ */
 async function mergeCardPrs (card, options) {
   console.log('----------------------------------')
   console.log('Card:', card.name)

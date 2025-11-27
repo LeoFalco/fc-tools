@@ -1,3 +1,9 @@
+import { uniq } from 'lodash-es'
+
+const TEMP_PROJECT_TEAM_MEMBERS = [
+  'LeoFalco',
+  'Carlos-F-Braga'
+]
 const CMMS_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
   'lilian-caballero',
@@ -34,6 +40,7 @@ const QUALITY_TEAM = [
 ]
 
 const TEAMS = {
+  TEMP: [...TEMP_PROJECT_TEAM_MEMBERS].sort(),
   TODOS: [...CMMS_PROJECT_TEAM_MEMBERS, ...CMMS_MAINTENANCE_TEAM_MEMBERS, ...FSM_PROJECT_TEAM_MEMBERS, ...FSM_MAINTENANCE_TEAM_MEMBERS].sort(),
   CMMS: [...CMMS_PROJECT_TEAM_MEMBERS, ...CMMS_MAINTENANCE_TEAM_MEMBERS].sort(),
   FSM: [...FSM_PROJECT_TEAM_MEMBERS, ...FSM_MAINTENANCE_TEAM_MEMBERS].sort(),
@@ -43,13 +50,14 @@ const TEAMS = {
   'FSM Sustentação': FSM_MAINTENANCE_TEAM_MEMBERS.sort()
 }
 
-const ALL_MEMBERS = [
+const ALL_MEMBERS = uniq([
+  ...TEMP_PROJECT_TEAM_MEMBERS,
   ...CMMS_PROJECT_TEAM_MEMBERS,
   ...CMMS_MAINTENANCE_TEAM_MEMBERS,
   ...FSM_PROJECT_TEAM_MEMBERS,
   ...FSM_MAINTENANCE_TEAM_MEMBERS,
   ...QUALITY_TEAM
-].sort()
+]).sort()
 
 const duplicateMembers = ALL_MEMBERS.filter((item, index) => ALL_MEMBERS.indexOf(item) !== index)
 
