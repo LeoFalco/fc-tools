@@ -42,6 +42,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => !branch.startsWith(baseBranch)))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
+      .then((branches) => branches.filter((branch) => branch !== 'wiki/master'))
 
     for (const branch of branches) {
       const isAhead = await $(`git log ${baseBranch}..${branch} --oneline`).then((output) => output !== '')
@@ -64,6 +65,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
       .then((branches) => branches.filter((branch) => branch.startsWith('master') === false))
+      .then((branches) => branches.filter((branch) => branch !== 'wiki/master'))
 
     if (mergedBranches.length === 0) {
       info('No local branches to delete')
@@ -88,6 +90,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
       .then((branches) => branches.filter((branch) => branch.startsWith('master') === false))
+      .then((branches) => branches.filter((branch) => branch !== 'wiki/master'))
 
     if (mergedOnRemoteBranches.length === 0) {
       info('No remote branches to delete')

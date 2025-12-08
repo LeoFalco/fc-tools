@@ -23,6 +23,7 @@ class PrMergeCommand {
       .command('merge')
       .description('merge pull request')
       .action(this.action.bind(this))
+      .argument('url', 'pull request url to merge')
       .option('--flux', 'merge pull request with flux')
       .option('--confirm', 'execute merge without confirmation')
       .option('--continue', 'continue merging after a failed merge', false)
@@ -30,28 +31,31 @@ class PrMergeCommand {
   }
 
   /**
+   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.refresh
    */
-  async action (options) {
+  async action (url, options) {
+    console.log(blue('Starting PR merge process...'), JSON.stringify(options), JSON.stringify(url))
     if (options.flux) {
-      await this.actionWithFlux(options)
+      await this.actionWithFlux(url, options)
     } else {
-      await this.actionWithoutFlux(options)
+      await this.actionWithoutFlux(url, options)
     }
   }
 
   /**
+   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.refresh
    */
-  async actionWithFlux (options) {
+  async actionWithFlux (url, options) {
     console.log(blue('Using flux find pull requests'))
 
     const cards = await fluxClient.getUnopenedCards({
@@ -104,16 +108,38 @@ class PrMergeCommand {
       if (options.confirm) {
         await sleep(1000)
       }
-      this.actionWithFlux(options)
+      this.actionWithFlux(url, options)
     }
   }
 
   /**
+   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
+   * @param {boolean} options.continue
+   * @param {boolean} options.refresh
    */
-  async actionWithoutFlux (options) {
+  async actionWithoutFlux (url, options) {
+    if (!url) {
+      console.log(red('Pull request URL is required'))
+      return
+    }
+
+    console.log(blue('Merging pull request without flux:', url))
+    const project = githubPrUrlRegex.exec(url)?.groups?.repo
+
+    console.log(blue('Parsed pull request URL:', JSON.stringify(githubPrUrlRegex.exec(url))))
+
+    if (!project) {
+      console.log(red('Invalid pull request URL'))
+      return
+    }
+
+    await $('cd ~/FieldControl/' + project)
+
+    await $('gh pr checkout ' + url)
+
     const currentBranch = await $('git branch --show-current')
     await $('gh pr review --approve', { reject: false })
 
