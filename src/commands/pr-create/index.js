@@ -148,6 +148,7 @@ class PrCreateCommand {
     await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
       .catch((err) => {
         error(`Failed to open pr.\n${err.message}`)
+        console.error(err)
         process.exit(1)
       })
 
