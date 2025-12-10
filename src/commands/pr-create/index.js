@@ -38,13 +38,18 @@ class PrCreateCommand {
   async action (options) {
     const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
-    await $(`git push origin ${currentBranchName} -u -f --no-verify`)
+    await $(`git push -u origin ${currentBranchName} -f --no-verify`,
+      {
+        loading: false,
+        stdio: 'inherit'
+      }
+    )
     const token = await $('gh auth token')
     const octokit = new Octokit({ auth: token })
 
     const repoNameWithOwner = await $('gh repo view --json nameWithOwner --jq .nameWithOwner')
 
-    const [owner, repoName] = repoNameWithOwner.split('/')
+    const [owner, repoName] = repoNameWithOwner.toString().split('/')
 
     const repo = await octokit.rest.repos.get({
       owner,
@@ -113,6 +118,7 @@ class PrCreateCommand {
       })
 
     const myTeams = teams ? teams.organization.myTeams.nodes : []
+    // @ts-ignore
     const repoTeams = teams ? teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length) : []
 
     const allTeams = (teams ? myTeams.concat(repoTeams) : [])
@@ -133,19 +139,19 @@ class PrCreateCommand {
       info(`Team ${teamName} members: ${teamMembers.join(', ')}`)
     }
 
-    const teamNames = Object.keys(teamMap)
-    const teamMembers = Object.values(teamMap).flat()
+    // const teamNames = Object.keys(teamMap)
+    // const teamMembers = Object.values(teamMap).flat()
 
-    const reviewers = teamNames
-      .concat(teamMembers)
-      .concat(['pedroaugusto2002', 'tauk7', 'giovanalmeida2'])
-      .filter(value => value !== 'lfreneda')
-      .filter(value => value !== 'IgorMoraes15')
+    // const reviewers = teamNames
+    //   .concat(teamMembers)
+    //   .concat(['pedroaugusto2002', 'tauk7', 'giovanalmeida2'])
+    //   .filter(value => value !== 'lfreneda')
+    //   .filter(value => value !== 'IgorMoraes15')
 
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
-    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --body-file ${PR_DESCRIPTION_FILE_PATH}${reviewers.length ? ' --reviewer ' + reviewers.join(',') : ''}`)
+    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --head ${currentBranchName} --body-file ${PR_DESCRIPTION_FILE_PATH}`)
       .catch((err) => {
         error(`Failed to open pr.\n${err.message}`)
         console.error(err)
