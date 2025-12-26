@@ -193,11 +193,20 @@ function issueNumberFromBranch ({ currentBranchName }) {
   return match && match[0]
 }
 
+/**
+ * @param {string} text
+ */
 function capitalize (text) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-async function getPullRequestPrefix ({ repoPath }) {
+/**
+ * @param {Object} options
+ * @param {string} options.repoPath
+ * @param {string} options.commitMessage
+ */
+async function getPullRequestPrefix ({ repoPath, commitMessage }) {
+  const commitMessagePrefix = commitMessage?.match(/^\w+/)?.[0]
   const possiblePrefixes = await getPrefixFromFieldnewsWorkflow({ repoPath })
 
   if (!possiblePrefixes || possiblePrefixes.length === 0) {
@@ -206,6 +215,15 @@ async function getPullRequestPrefix ({ repoPath }) {
 
   if (possiblePrefixes.length === 1) {
     return possiblePrefixes[0]
+  }
+
+  const infered = inferWithCommitLintConventions({
+    commitMessagePrefix,
+    possiblePrefixes
+  })
+
+  if (infered) {
+    return infered
   }
 
   const result = await inquirer.prompt([
@@ -220,6 +238,58 @@ async function getPullRequestPrefix ({ repoPath }) {
   return result.selectedPrefix
 }
 
+/**
+ * @param {Object} options
+ * @param {string} options.commitMessagePrefix
+ * @param {string[]} options.possiblePrefixes
+ */
+async function inferWithCommitLintConventions ({ commitMessagePrefix, possiblePrefixes }) {
+  switch (commitMessagePrefix) {
+    case 'feat': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('implementação'))
+      if (found) return found
+    }
+      break
+    case 'fix': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('correção'))
+      if (found) return found
+    }
+      break
+    case 'perf': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('melhoria'))
+      if (found) return found
+    }
+      break
+    case 'refactor': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('melhoria'))
+      if (found) return found
+    }
+      break
+    case 'test': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('teste'))
+      if (found) return found
+    }
+      break
+    case 'chore': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('implementação'))
+      if (found) return found
+    }
+      break
+    case 'ci': {
+      const found = possiblePrefixes.find(prefix => prefix.toLowerCase().includes('melhoria'))
+      if (found) return found
+    }
+      break
+    default: {
+      return null
+    }
+  }
+}
+
+/**
+ * @param {Object} options
+ * @param {string} options.repoPath
+ */
 async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
   const workflowFieldnewsPath = repoPath + '/.github/workflows/fieldnews.yml'
   const ymlString = await readFile(workflowFieldnewsPath, {
@@ -276,8 +346,13 @@ async function buildPullRequestDescription ({ repoPath, currentBranchName, compl
   return content
 }
 
+/**
+ * @param {Object} options
+ * @param {string} options.repoPath
+ * @param {string} options.commitMessage
+ */
 async function buildPullRequestTitle ({ repoPath, commitMessage }) {
-  const prefix = await getPullRequestPrefix({ repoPath })
+  const prefix = await getPullRequestPrefix({ repoPath, commitMessage })
   commitMessage = commitMessage
     .replace(/.*:/, '')
     .split('\n')[0]
