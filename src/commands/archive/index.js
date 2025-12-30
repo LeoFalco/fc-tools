@@ -3,7 +3,7 @@
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
-const { red, yellow, green, gray, blue } = chalk
+const { green, gray, blue } = chalk
 
 class ArchiveCommand {
   /**
