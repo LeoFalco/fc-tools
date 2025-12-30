@@ -136,19 +136,14 @@ class PrMergeCommand {
       return
     }
 
-    await $('cd ~/FieldControl/' + project)
+    const cwd = '~/FieldControl/' + project
 
-    await $('gh pr checkout ' + url)
+    await $('gh pr checkout ' + url, { cwd })
 
-    const currentBranch = await $('git branch --show-current')
-    await $('gh pr review --approve', { reject: false })
-
-    await $('git checkout master')
-    await $('git pull origin master')
-    await $('git checkout ' + currentBranch)
-    await $('git rebase master')
+    const currentBranch = await $('git branch --show-current', { cwd })
 
     console.log(blue(`Ready to merge branch ${currentBranch} into master`))
+
     const confirmMerge = await promptConfirm({
       confirm: options.confirm
     })
@@ -158,9 +153,20 @@ class PrMergeCommand {
       return
     }
 
-    await $('git checkout master')
-    await $('git merge ' + currentBranch)
-    await $('git push origin master')
+    const runs = []
+
+    // @ts-ignore
+    runs.push(...(await $('gh run list --json workflowDatabaseId --state in_progress', { cwd, json: true })))
+    runs.push(...(await $('gh run list --json workflowDatabaseId --state queued', { cwd, json: true })))
+    runs.push(...(await $('gh run list --json workflowDatabaseId --state pending', { cwd, json: true })))
+
+    for (const { workflowDatabaseId } of runs) {
+      console.log(blue('Cancelling run:', workflowDatabaseId))
+      await $('gh run cancel ' + workflowDatabaseId, { cwd })
+    }
+    await $('gh pr merge --admin --squash --delete-branch', { stdio: 'inherit', cwd })
+    await $('git checkout master', { cwd })
+    await $('git pull', { cwd })
     console.log('PR merged successfully')
   }
 }

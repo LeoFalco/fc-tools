@@ -11,6 +11,7 @@ import ora from 'ora'
  * @param {boolean} [options.loading] - loading spinner (default: true)
  * @param { 'pipe'| 'inherit' | 'ignore' | 'overlapped' } [options.stdio] - stdio option for execa (default: pipe)
  * @param {boolean} [options.json] - parse output as JSON (default: false)
+ * @param {string} [options.cwd] - working directory (default: process.cwd())
  * @returns {Promise<string | Object>} - command output
  */
 export async function $ (command, options) {
@@ -25,6 +26,7 @@ export async function $ (command, options) {
 
   const result = await exec(command, {
     cleanup: true,
+    cwd: options.cwd,
     reject: options.reject,
     stdio: options.stdio || 'pipe'
   })
