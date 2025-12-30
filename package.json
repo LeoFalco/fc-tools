@@ -46,7 +46,7 @@
     "date-fns-tz": "3.2.0",
     "dotenv": "17.2.1",
     "execa": "9.6.1",
-    "googleapis": "155.0.1",
+    "googleapis": "169.0.0",
     "inquirer": "13.1.0",
     "lodash-es": "4.17.22",
     "node-notifier": "10.0.1",
