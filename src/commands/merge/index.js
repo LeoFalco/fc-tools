@@ -135,17 +135,20 @@ class PrMergeCommand {
     const runs = []
 
     // @ts-ignore
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state in_progress`, { json: true })))
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state queued`, { json: true })))
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state pending`, { json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status in_progress`, { json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status queued`, { json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status pending`, { json: true })))
 
-    for (const { workflowDatabaseId } of runs) {
-      console.log(blue('Cancelling run:', workflowDatabaseId))
-      await $('gh run cancel ' + workflowDatabaseId)
-    }
+    // aprove pr
+    await $('gh pr review --approve', { stdio: 'inherit', reject: false })
     await $('gh pr merge --admin --squash --delete-branch', { stdio: 'inherit' })
     await $('git checkout master')
     await $('git pull')
+
+    for (const { databaseId, displayTitle, workflowName } of runs) {
+      console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
+      await $(`gh run cancel ${databaseId}`)
+    }
     console.log('PR merged successfully')
   }
 }
