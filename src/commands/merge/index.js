@@ -152,7 +152,6 @@ class PrMergeCommand {
       console.log('Fallbacking with auto merge')
       await $('gh pr merge --squash --auto --delete-branch')
       console.log('PR auto merge enabled')
-      merged = true
     }
 
     if (canCancel) {
