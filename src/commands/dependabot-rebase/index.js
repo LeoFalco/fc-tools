@@ -10,7 +10,8 @@ class DependabotRebaseCommand {
   }
 
   async action () {
-    const prs = await $('gh pr list --author "app/dependabot" --json number', { json: true })
+    const allPrs = await $('gh pr list --json number,author', { json: true })
+    const prs = allPrs.filter(pr => pr.author.login.toLowerCase().includes('dependabot'))
 
     if (!prs || prs.length === 0) {
       info('No open Dependabot PRs found.')
@@ -20,8 +21,8 @@ class DependabotRebaseCommand {
     for (const pr of prs) {
       const { number } = pr
       info(`Processing PR #${number}...`)
-      await $(`gh pr comment ${number} --body "@dependabot rebase"`)
-      await $(`gh pr merge ${number} --auto --rebase`)
+      await $(`gh pr comment ${number} --body @dependabot\\ rebase`)
+      await $(`gh pr merge ${number} --auto --squash`)
     }
 
     info('Successfully processed all Dependabot PRs.')
