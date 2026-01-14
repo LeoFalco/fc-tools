@@ -139,21 +139,36 @@ class PrMergeCommand {
     runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status queued`, { json: true })))
     runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status pending`, { json: true })))
 
+    let canCancel = true
+    let merged = false
     try {
       await $('gh pr merge --admin --squash --delete-branch')
       console.log('PR merged successfully')
+      merged = true
     } catch (error) {
+      canCancel = false
       // @ts-ignore
       console.log(error.stderr?.toString() || error.stdout?.toString() || error.message)
       console.log('Fallbacking with auto merge')
       await $('gh pr merge --squash --auto --delete-branch')
+      console.log('PR auto merge enabled')
+      merged = true
     }
-    await $('git checkout master')
-    await $('git pull')
 
-    for (const { databaseId, displayTitle, workflowName } of runs) {
-      console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
-      await $(`gh run cancel ${databaseId}`)
+    if (canCancel) {
+      for (const { databaseId, displayTitle, workflowName } of runs) {
+        console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
+        await $(`gh run cancel ${databaseId}`).catch(error => {
+          console.log('Failed to cancel run', databaseId, error.message)
+        })
+      }
+    }
+
+    if (merged) {
+      await $('git checkout master')
+      await $('git pull')
+      await $('git remote prune origin')
+      await $('git branch -D ' + currentBranch, { reject: false })
     }
   }
 }
