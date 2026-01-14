@@ -141,6 +141,7 @@ class PrMergeCommand {
 
     try {
       await $('gh pr merge --admin --squash --delete-branch')
+      console.log('PR merged successfully')
     } catch (error) {
       // @ts-ignore
       console.log(error.stderr?.toString() || error.stdout?.toString() || error.message)
@@ -154,7 +155,6 @@ class PrMergeCommand {
       console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
       await $(`gh run cancel ${databaseId}`)
     }
-    console.log('PR merged successfully')
   }
 }
 
