@@ -139,9 +139,14 @@ class PrMergeCommand {
     runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status queued`, { json: true })))
     runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status pending`, { json: true })))
 
-    // aprove pr
-    await $('gh pr review --approve', { stdio: 'inherit', reject: false })
-    await $('gh pr merge --admin --squash --delete-branch', { stdio: 'inherit' })
+    try {
+      await $('gh pr merge --admin --squash --delete-branch')
+    } catch (error) {
+      // @ts-ignore
+      console.log(error.stderr?.toString() || error.stdout?.toString() || error.message)
+      console.log('Fallbacking with auto merge')
+      await $('gh pr merge --squash --auto --delete-branch')
+    }
     await $('git checkout master')
     await $('git pull')
 
