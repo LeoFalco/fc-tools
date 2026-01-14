@@ -23,7 +23,6 @@ class PrMergeCommand {
       .command('merge')
       .description('merge pull request')
       .action(this.action.bind(this))
-      .argument('url', 'pull request url to merge')
       .option('--flux', 'merge pull request with flux')
       .option('--confirm', 'execute merge without confirmation')
       .option('--continue', 'continue merging after a failed merge', false)
@@ -31,31 +30,29 @@ class PrMergeCommand {
   }
 
   /**
-   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.refresh
    */
-  async action (url, options) {
-    console.log(blue('Starting PR merge process...'), JSON.stringify(options), JSON.stringify(url))
+  async action (options) {
+    console.log(blue('Starting PR merge process...'), JSON.stringify(options))
     if (options.flux) {
-      await this.actionWithFlux(url, options)
+      await this.actionWithFlux(options)
     } else {
-      await this.actionWithoutFlux(url, options)
+      await this.actionWithoutFlux(options)
     }
   }
 
   /**
-   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.refresh
    */
-  async actionWithFlux (url, options) {
+  async actionWithFlux (options) {
     console.log(blue('Using flux find pull requests'))
 
     const cards = await fluxClient.getUnopenedCards({
@@ -108,39 +105,21 @@ class PrMergeCommand {
       if (options.confirm) {
         await sleep(1000)
       }
-      this.actionWithFlux(url, options)
+      this.actionWithFlux(options)
     }
   }
 
   /**
-   * @param {string} url
    * @param {Object} options
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.refresh
    */
-  async actionWithoutFlux (url, options) {
-    if (!url) {
-      console.log(red('Pull request URL is required'))
-      return
-    }
+  async actionWithoutFlux (options) {
+    console.log(blue('Merging pull request without flux'))
 
-    console.log(blue('Merging pull request without flux:', url))
-    const project = githubPrUrlRegex.exec(url)?.groups?.repo
-
-    console.log(blue('Parsed pull request URL:', JSON.stringify(githubPrUrlRegex.exec(url))))
-
-    if (!project) {
-      console.log(red('Invalid pull request URL'))
-      return
-    }
-
-    const cwd = '~/FieldControl/' + project
-
-    await $('gh pr checkout ' + url, { cwd })
-
-    const currentBranch = await $('git branch --show-current', { cwd })
+    const currentBranch = await $('git branch --show-current')
 
     console.log(blue(`Ready to merge branch ${currentBranch} into master`))
 
@@ -156,17 +135,17 @@ class PrMergeCommand {
     const runs = []
 
     // @ts-ignore
-    runs.push(...(await $('gh run list --json workflowDatabaseId --state in_progress', { cwd, json: true })))
-    runs.push(...(await $('gh run list --json workflowDatabaseId --state queued', { cwd, json: true })))
-    runs.push(...(await $('gh run list --json workflowDatabaseId --state pending', { cwd, json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state in_progress`, { json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state queued`, { json: true })))
+    runs.push(...(await $(`gh run list --branch ${currentBranch} --json workflowDatabaseId --state pending`, { json: true })))
 
     for (const { workflowDatabaseId } of runs) {
       console.log(blue('Cancelling run:', workflowDatabaseId))
-      await $('gh run cancel ' + workflowDatabaseId, { cwd })
+      await $('gh run cancel ' + workflowDatabaseId)
     }
-    await $('gh pr merge --admin --squash --delete-branch', { stdio: 'inherit', cwd })
-    await $('git checkout master', { cwd })
-    await $('git pull', { cwd })
+    await $('gh pr merge --admin --squash --delete-branch', { stdio: 'inherit' })
+    await $('git checkout master')
+    await $('git pull')
     console.log('PR merged successfully')
   }
 }
@@ -241,7 +220,7 @@ async function extractPrData (card) {
     console.log(yellow('  - No pull requests found in description.'))
   }
 
-  card.pullRequests.forEach((pull) => {
+  card.pullRequests.forEach((/** @type {{ $metadata: ArrayLike<any> | { [s: string]: any; }; url: any; }} */ pull) => {
     /**
      * @type {string[]}
      */
@@ -284,6 +263,7 @@ async function mergeCardPrs (card, options) {
     }
 
     const reject = !options.continue
+    // @ts-ignore
     const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
     console.log(blue(`    State is ${state}`))
 
@@ -291,7 +271,9 @@ async function mergeCardPrs (card, options) {
     if (isOpen) {
       const result = await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'pipe', loading: false, returnProperty: 'all' })
 
+      // @ts-ignore
       if (!result.success) {
+        // @ts-ignore
         console.log(red('    ' + result.stderr?.trim()))
         continue
       }
@@ -313,6 +295,7 @@ async function mergeCardPrs (card, options) {
       number: pullRequest.number
     })
 
+    // @ts-ignore
     const hasFluxCardComment = comments.some(comment => comment.body.includes('Flux: https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId='))
 
     if (!hasFluxCardComment) {
