@@ -124,7 +124,8 @@ class PrMergeCommand {
     console.log(blue(`Ready to merge branch ${currentBranch} into master`))
 
     const confirmMerge = await promptConfirm({
-      confirm: options.confirm
+      confirm: options.confirm,
+      message: `Você tem certeza que deseja prosseguir? ${currentBranch} -> master`
     })
 
     if (!confirmMerge) {
