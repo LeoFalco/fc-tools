@@ -124,7 +124,8 @@ class PrMergeCommand {
     console.log(blue(`Ready to merge branch ${currentBranch} into master`))
 
     const confirmMerge = await promptConfirm({
-      confirm: options.confirm
+      confirm: options.confirm,
+      message: `Você tem certeza que deseja prosseguir? ${currentBranch} -> master`
     })
 
     if (!confirmMerge) {
@@ -151,6 +152,9 @@ class PrMergeCommand {
       console.log(error.stderr?.toString() || error.stdout?.toString() || error.message)
       console.log('Fallbacking with auto merge')
       await $('gh pr merge --squash --auto --delete-branch')
+        .catch(error => {
+          console.log('Failed to merge PR', error.message)
+        })
       console.log('PR auto merge enabled')
     }
 
