@@ -22,7 +22,9 @@ class DependabotRebaseCommand {
       const { number } = pr
       info(`Processing PR #${number}...`)
       await $(`gh pr comment ${number} --body @dependabot\\ rebase`)
-      await $(`gh pr merge ${number} --auto --squash`)
+      await $(`gh pr merge ${number} --auto --squash`).catch((error) => {
+        info(`Failed to merge PR #${number}.`, error.message)
+      })
     }
 
     info('Successfully processed all Dependabot PRs.')
