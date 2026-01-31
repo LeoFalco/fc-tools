@@ -45,7 +45,7 @@
     "execa": "9.6.1",
     "googleapis": "170.1.0",
     "inquirer": "13.2.2",
-    "lodash-es": "4.17.22",
+    "lodash-es": "4.17.23",
     "node-notifier": "10.0.1",
     "octokit": "5.0.5",
     "open": "11.0.0",
