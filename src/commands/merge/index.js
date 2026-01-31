@@ -119,13 +119,15 @@ class PrMergeCommand {
   async actionWithoutFlux (options) {
     console.log(blue('Merging pull request without flux'))
 
+    const remoteInfo = await $('git remote show origin')
+    const defaultBranch = remoteInfo.match(/HEAD branch: (.*)/)?.[1] || 'master'
     const currentBranch = await $('git branch --show-current')
 
-    console.log(blue(`Ready to merge branch ${currentBranch} into master`))
+    console.log(blue(`Ready to merge branch ${currentBranch} into ${defaultBranch}`))
 
     const confirmMerge = await promptConfirm({
       confirm: options.confirm,
-      message: `Você tem certeza que deseja prosseguir? ${currentBranch} -> master`
+      message: `Você tem certeza que deseja prosseguir? ${currentBranch} -> ${defaultBranch}`
     })
 
     if (!confirmMerge) {
@@ -133,45 +135,57 @@ class PrMergeCommand {
       return
     }
 
-    const runs = []
+    const runStatuses = ['in_progress', 'queued', 'pending']
+    const runs = (
+      await Promise.all(
+        runStatuses.map(status =>
+          $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status ${status}`, {
+            json: true
+          })
+        )
+      )
+    ).flat()
 
-    // @ts-ignore
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status in_progress`, { json: true })))
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status queued`, { json: true })))
-    runs.push(...(await $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status pending`, { json: true })))
+    // 1. Try Admin Merge first (faster, ignores checks)
+    const adminMergeExitCode = await $('gh pr merge --admin --squash --delete-branch', {
+      stdio: 'inherit',
+      reject: false,
+      returnProperty: 'exitCode'
+    })
 
-    let canCancel = true
-    let merged = false
-    try {
-      await $('gh pr merge --admin --squash --delete-branch')
-      console.log('PR merged successfully')
-      merged = true
-    } catch (error) {
-      canCancel = false
-      // @ts-ignore
-      console.log(error.stderr?.toString() || error.stdout?.toString() || error.message)
-      console.log('Fallbacking with auto merge')
-      await $('gh pr merge --squash --auto --delete-branch')
-        .catch(error => {
-          console.log('Failed to merge PR', error.message)
-        })
-      console.log('PR auto merge enabled')
+    const adminMerged = adminMergeExitCode === 0
+    let merged = adminMerged
+
+    // 2. Fallback to Auto Merge if Admin Merge failed
+    if (!adminMerged) {
+      console.log(yellow('Admin merge failed. Falling back to auto-merge...'))
+      const autoMergeExitCode = await $('gh pr merge --squash --auto --delete-branch', {
+        stdio: 'inherit',
+        reject: false,
+        returnProperty: 'exitCode'
+      })
+      merged = autoMergeExitCode === 0
     }
 
-    if (canCancel) {
+    // 3. Cancel runs only if we successfully merged via Admin (bypassing them)
+    if (adminMerged) {
+      // @ts-ignore
       for (const { databaseId, displayTitle, workflowName } of runs) {
         console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
         await $(`gh run cancel ${databaseId}`).catch(error => {
-          console.log('Failed to cancel run', databaseId, error.message)
+          console.log(red(`Failed to cancel run ${databaseId}: ${error.message}`))
         })
       }
     }
 
+    // 4. Local branch cleanup
     if (merged) {
-      await $('git checkout master')
+      await $('git checkout ' + defaultBranch)
       await $('git pull')
       await $('git remote prune origin')
-      await $('git branch -D ' + currentBranch, { reject: false })
+      if (currentBranch !== defaultBranch) {
+        await $('git branch -D ' + currentBranch, { reject: false })
+      }
     }
   }
 }
