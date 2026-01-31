@@ -120,7 +120,8 @@ class PrMergeCommand {
     console.log(blue('Merging pull request without flux'))
 
     const remoteInfo = await $('git remote show origin')
-    const defaultBranch = remoteInfo.match(/HEAD branch: (.*)/)?.[1] || 'master'
+    // @ts-ignore
+    const defaultBranch = remoteInfo?.match(/HEAD branch: (.*)/)?.[1] || 'master'
     const currentBranch = await $('git branch --show-current')
 
     console.log(blue(`Ready to merge branch ${currentBranch} into ${defaultBranch}`))
@@ -147,11 +148,10 @@ class PrMergeCommand {
     ).flat()
 
     // 1. Try Admin Merge first (faster, ignores checks)
-    const adminMergeExitCode = await $('gh pr merge --admin --squash --delete-branch', {
-      stdio: 'inherit',
-      reject: false,
-      returnProperty: 'exitCode'
-    })
+    const adminMergeExitCode = await $('gh pr merge --admin --squash --delete-branch')
+      // @ts-ignore
+      .then(result => result.exitCode)
+      .catch(() => 1)
 
     const adminMerged = adminMergeExitCode === 0
     let merged = adminMerged
@@ -159,11 +159,10 @@ class PrMergeCommand {
     // 2. Fallback to Auto Merge if Admin Merge failed
     if (!adminMerged) {
       console.log(yellow('Admin merge failed. Falling back to auto-merge...'))
-      const autoMergeExitCode = await $('gh pr merge --squash --auto --delete-branch', {
-        stdio: 'inherit',
-        reject: false,
-        returnProperty: 'exitCode'
-      })
+      const autoMergeExitCode = await $('gh pr merge --squash --auto --delete-branch')
+        // @ts-ignore
+        .then(result => result.exitCode)
+        .catch(() => 1)
       merged = autoMergeExitCode === 0
     }
 
