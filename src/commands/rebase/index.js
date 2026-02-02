@@ -37,7 +37,7 @@ class RebaseCommand {
     const isCurrentBranchAlreadyMerged = await $(`git branch --merged ${baseBranch}`)
       .then((result) => {
         return result.split('\n')
-          .map((branchName) => branchName.replace('*', ''))
+          .map((branchName) => branchName.replace(/^\*\s*/, ''))
           .map((branchName) => branchName.trim())
           .filter((branchName) => branchName !== baseBranch)
           .filter((branchName) => !branchName.startsWith(baseBranch))
