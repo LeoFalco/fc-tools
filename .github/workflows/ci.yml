@@ -1,5 +1,8 @@
 name: Continuous integration/deployment
 
+permissions:
+  contents: read
+
 on: push
 
 concurrency:
