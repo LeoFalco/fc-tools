@@ -3,6 +3,9 @@
 import { execaCommand as exec } from 'execa'
 import ora from 'ora'
 
+import chalk from 'chalk'
+const { gray } = chalk
+
 /**
  * @param {string} command
  * @param {Object} [options] - options
@@ -25,6 +28,10 @@ export async function $ (command, options) {
   const spinner = options.loading
     ? ora({ text: command }).start()
     : null
+
+  if (!options.loading) {
+    console.log(gray('>'), command)
+  }
 
   const result = await exec(command, {
     cleanup: true,
