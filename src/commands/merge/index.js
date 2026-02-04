@@ -225,7 +225,7 @@ async function merge ({ admin }) {
     console.log()
     console.log(blue(mergeType.message))
     const result = await $(mergeType.command, {
-      stdio: 'inherit',
+      stdio: 'pipe',
       reject: false,
       returnProperty: 'all',
       loading: false
@@ -241,6 +241,8 @@ async function merge ({ admin }) {
     // @ts-ignore
     if (result.exitCode === 0) {
       console.log(green(mergeType.successMessage))
+      // @ts-ignore
+      console.log(result.stdout)
       return mergeType.mergeStatus
     }
   }
