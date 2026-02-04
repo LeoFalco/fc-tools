@@ -61,8 +61,8 @@ export async function $ (command, options) {
     return {
       exitCode: result.exitCode,
       success: result.exitCode === 0,
-      stdout: result.stdout,
-      stderr: result.stderr
+      stdout: result.stdout?.toString().trim(),
+      stderr: result.stderr?.toString().trim()
     }
   }
 
