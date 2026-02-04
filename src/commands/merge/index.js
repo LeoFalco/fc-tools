@@ -222,19 +222,24 @@ async function merge ({ admin }) {
   mergeTypes.sort((a, b) => a.priority - b.priority)
 
   for (const mergeType of mergeTypes) {
+    console.log()
     console.log(blue(mergeType.message))
     const result = await $(mergeType.command, {
       stdio: 'inherit',
       reject: false,
-      returnProperty: 'exitCode',
+      returnProperty: 'all',
       loading: false
     })
 
-    if (result !== 0) {
+    // @ts-ignore
+    if (result.exitCode !== 0) {
       console.log(yellow(mergeType.failMessage))
+      // @ts-ignore
+      console.log(red(result.stderr))
     }
 
-    if (result === 0) {
+    // @ts-ignore
+    if (result.exitCode === 0) {
       console.log(green(mergeType.successMessage))
       return mergeType.mergeStatus
     }
