@@ -153,9 +153,10 @@ class PrMergeCommand {
     ).flat()
 
     // 1. Try Admin Merge first (faster, ignores checks)
-    const merged = await merge({ admin: options.admin })
+    const mergeDone = await merge({ admin: options.admin })
 
-    if (!merged) {
+    if (!mergeDone) {
+      console.log(yellow('Merge operation not completed yet'))
       return
     }
 
@@ -173,6 +174,10 @@ class PrMergeCommand {
   }
 }
 
+/**
+ * @param {Object} options
+ * @param {boolean} options.admin
+ */
 async function merge ({ admin }) {
   const mergeTypes = [
     {
@@ -180,21 +185,24 @@ async function merge ({ admin }) {
       name: 'normal',
       command: 'gh pr merge --squash --delete-branch',
       message: 'Trying normal merge',
-      failMessage: 'Normal merge failed'
+      failMessage: 'Normal merge failed',
+      mergeDone: true
     },
     {
       priority: 2,
       name: 'auto',
       command: 'gh pr merge --squash --auto --delete-branch',
       message: 'Trying auto merge',
-      failMessage: 'Auto merge failed'
+      failMessage: 'Auto merge failed',
+      mergeDone: false
     },
     {
       priority: admin ? 0 : 3,
       name: 'admin',
       command: 'gh pr merge --admin --squash --delete-branch',
       message: 'Trying admin merge',
-      failMessage: 'Admin merge failed'
+      failMessage: 'Admin merge failed',
+      mergeDone: true
     }
   ]
 
@@ -205,7 +213,8 @@ async function merge ({ admin }) {
     const result = await $(mergeType.command, {
       stdio: 'inherit',
       reject: false,
-      returnProperty: 'exitCode'
+      returnProperty: 'exitCode',
+      loading: false
     })
 
     if (result !== 0) {
@@ -214,7 +223,7 @@ async function merge ({ admin }) {
 
     if (result === 0) {
       console.log(green('Merged successfully'))
-      return true
+      return mergeType.mergeDone
     }
   }
 
