@@ -153,10 +153,20 @@ class PrMergeCommand {
     ).flat()
 
     // 1. Try Admin Merge first (faster, ignores checks)
-    const mergeDone = await merge({ admin: options.admin })
+    const mergeStatus = await merge({ admin: options.admin })
 
-    if (!mergeDone) {
-      console.log(yellow('Merge operation not completed yet'))
+    if (mergeStatus === 'pending') {
+      console.log(yellow('Merge operation is pending'))
+      return
+    }
+
+    if (mergeStatus === 'failed') {
+      console.log(red('Merge operation failed'))
+      return
+    }
+
+    if (mergeStatus === 'done') {
+      console.log(green('Merge operation completed'))
       return
     }
 
@@ -186,7 +196,8 @@ async function merge ({ admin }) {
       command: 'gh pr merge --squash --delete-branch',
       message: 'Trying normal merge',
       failMessage: 'Normal merge failed',
-      mergeDone: true
+      successMessage: 'Normal merge completed',
+      mergeStatus: 'done'
     },
     {
       priority: 2,
@@ -194,7 +205,8 @@ async function merge ({ admin }) {
       command: 'gh pr merge --squash --auto --delete-branch',
       message: 'Trying auto merge',
       failMessage: 'Auto merge failed',
-      mergeDone: false
+      successMessage: 'Auto merge completed',
+      mergeStatus: 'pending'
     },
     {
       priority: admin ? 0 : 3,
@@ -202,7 +214,8 @@ async function merge ({ admin }) {
       command: 'gh pr merge --admin --squash --delete-branch',
       message: 'Trying admin merge',
       failMessage: 'Admin merge failed',
-      mergeDone: true
+      successMessage: 'Admin merge completed',
+      mergeStatus: 'done'
     }
   ]
 
@@ -222,14 +235,14 @@ async function merge ({ admin }) {
     }
 
     if (result === 0) {
-      console.log(green('Merged successfully'))
-      return mergeType.mergeDone
+      console.log(green(mergeType.successMessage))
+      return mergeType.mergeStatus
     }
   }
 
   console.log(yellow('All merge types failed'))
 
-  return false
+  return 'failed'
 }
 
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
