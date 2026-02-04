@@ -26,6 +26,7 @@ class PrMergeCommand {
       .option('--flux', 'merge pull request with flux')
       .option('--confirm', 'execute merge without confirmation')
       .option('--continue', 'continue merging after a failed merge', false)
+      .option('--admin', 'use admin merge', false)
       .option('--refresh', 'refresh pull request data while merging', false)
   }
 
@@ -34,10 +35,11 @@ class PrMergeCommand {
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
+   * @param {boolean} options.admin
    * @param {boolean} options.refresh
    */
   async action (options) {
-    console.log(blue('Starting PR merge process...'), JSON.stringify(options))
+    console.log(blue('Starting PR merge process...'))
     if (options.flux) {
       await this.actionWithFlux(options)
     } else {
@@ -50,6 +52,7 @@ class PrMergeCommand {
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
+   * @param {boolean} options.admin
    * @param {boolean} options.refresh
    */
   async actionWithFlux (options) {
@@ -114,6 +117,7 @@ class PrMergeCommand {
    * @param {boolean} options.flux
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
+   * @param {boolean} options.admin
    * @param {boolean} options.refresh
    */
   async actionWithoutFlux (options) {
@@ -141,52 +145,82 @@ class PrMergeCommand {
       await Promise.all(
         runStatuses.map(status =>
           $(`gh run list --branch ${currentBranch} --json databaseId,displayTitle,workflowName --status ${status}`, {
-            json: true
+            json: true,
+            loading: false
           })
         )
       )
     ).flat()
 
     // 1. Try Admin Merge first (faster, ignores checks)
-    const adminMergeExitCode = await $('gh pr merge --admin --squash --delete-branch')
-      // @ts-ignore
-      .then(result => result.exitCode)
-      .catch(() => 1)
+    const merged = await merge({ admin: options.admin })
 
-    const adminMerged = adminMergeExitCode === 0
-    let merged = adminMerged
-
-    // 2. Fallback to Auto Merge if Admin Merge failed
-    if (!adminMerged) {
-      console.log(yellow('Admin merge failed. Falling back to auto-merge...'))
-      const autoMergeExitCode = await $('gh pr merge --squash --auto --delete-branch')
-        // @ts-ignore
-        .then(result => result.exitCode)
-        .catch(() => 1)
-      merged = autoMergeExitCode === 0
+    if (!merged) {
+      return
     }
 
-    // 3. Cancel runs only if we successfully merged via Admin (bypassing them)
-    if (adminMerged) {
-      // @ts-ignore
-      for (const { databaseId, displayTitle, workflowName } of runs) {
-        console.log(blue(`Cancelling ${workflowName} • ${displayTitle}`))
-        await $(`gh run cancel ${databaseId}`).catch(error => {
-          console.log(red(`Failed to cancel run ${databaseId}: ${error.message}`))
-        })
-      }
-    }
+    console.log(blue('Canceling runs'))
+    // @ts-ignore
+    await Promise.allSettled(runs.map(run => $(`gh run cancel ${run.databaseId}`, { loading: false })))
 
-    // 4. Local branch cleanup
-    if (merged) {
-      await $('git checkout ' + defaultBranch)
-      await $('git pull')
-      await $('git remote prune origin')
-      if (currentBranch !== defaultBranch) {
-        await $('git branch -D ' + currentBranch, { reject: false })
-      }
+    console.log(blue('Local branch cleanup'))
+    await $('git checkout ' + defaultBranch)
+    await $('git pull')
+    await $('git remote prune origin')
+    if (currentBranch !== defaultBranch) {
+      await $('git branch -D ' + currentBranch, { reject: false })
     }
   }
+}
+
+async function merge ({ admin }) {
+  const mergeTypes = [
+    {
+      priority: 1,
+      name: 'normal',
+      command: 'gh pr merge --squash --delete-branch',
+      message: 'Trying normal merge',
+      failMessage: 'Normal merge failed'
+    },
+    {
+      priority: 2,
+      name: 'auto',
+      command: 'gh pr merge --squash --auto --delete-branch',
+      message: 'Trying auto merge',
+      failMessage: 'Auto merge failed'
+    },
+    {
+      priority: admin ? 0 : 3,
+      name: 'admin',
+      command: 'gh pr merge --admin --squash --delete-branch',
+      message: 'Trying admin merge',
+      failMessage: 'Admin merge failed'
+    }
+  ]
+
+  mergeTypes.sort((a, b) => a.priority - b.priority)
+
+  for (const mergeType of mergeTypes) {
+    console.log(blue(mergeType.message))
+    const result = await $(mergeType.command, {
+      stdio: 'inherit',
+      reject: false,
+      returnProperty: 'exitCode'
+    })
+
+    if (result !== 0) {
+      console.log(yellow(mergeType.failMessage))
+    }
+
+    if (result === 0) {
+      console.log(green('Merged successfully'))
+      return true
+    }
+  }
+
+  console.log(yellow('All merge types failed'))
+
+  return false
 }
 
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
