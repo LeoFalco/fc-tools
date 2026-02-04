@@ -26,19 +26,23 @@ export async function $ (command, options) {
     ? ora({ text: command }).start()
     : null
 
-  /** @type {any} */
-  const execOptions = {
+  const result = await exec(command, {
     cleanup: true,
     cwd: options.cwd,
     reject: options.reject,
     stdio: options.stdio || 'pipe',
-    timeout: options.timeout, // Added support for timeout
-    cancelSignal: options.signal // Added support for cancellation
-  }
-
-  const result = await exec(command, execOptions)
+    timeout: options.timeout,
+    cancelSignal: options.signal
+  })
     .then(result => {
-      spinner?.succeed()
+      const success = result.exitCode === 0
+
+      if (success) {
+        spinner?.succeed()
+      } else {
+        spinner?.fail()
+      }
+
       return result
     })
     .catch(err => {
