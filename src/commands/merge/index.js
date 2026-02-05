@@ -508,9 +508,9 @@ async function waitForMergeCompletion ({ currentBranch }) {
     const text = ['Waiting for merge completion state is ' + blue(state), '']
 
     statusCheckRollup.forEach((/** @type {{ name: string; conclusion: string; status: string; detailsUrl: string; }} */ item) => {
-      const color = item.conclusion === 'success' ? green : item.conclusion === 'failure' ? red : yellow
-
-      text.push('- ' + color(item.status + ' ' + item.conclusion) + ' ' + item.name + ' ' + gray(item.detailsUrl))
+      const status = item.conclusion || item.status
+      const color = status.includes('success') ? green : status.includes('failure') ? red : yellow
+      text.push('- ' + color(status) + ' ' + item.name + ' ' + gray(item.detailsUrl))
     })
 
     loading.text = text.join('\n')
