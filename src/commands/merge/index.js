@@ -5,10 +5,11 @@ import { QUALITY_TEAM } from '../../core/constants.js'
 import { $ } from '../../core/exec.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
-import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected, padEnd } from '../../utils/utils.js'
 import chalk from 'chalk'
 import { promptConfirm } from '../../utils/prompt.js'
 import { sleep } from '../../utils/sleep.js'
+import ora from 'ora'
 const { red, yellow, green, gray, blue } = chalk
 
 class PrMergeCommand {
@@ -27,6 +28,7 @@ class PrMergeCommand {
       .option('--confirm', 'execute merge without confirmation')
       .option('--continue', 'continue merging after a failed merge', false)
       .option('--admin', 'use admin merge', false)
+      .option('--wait', 'wait for merge to complete', false)
       .option('--refresh', 'refresh pull request data while merging', false)
   }
 
@@ -36,6 +38,7 @@ class PrMergeCommand {
    * @param {boolean} options.confirm
    * @param {boolean} options.continue
    * @param {boolean} options.admin
+   * @param {boolean} options.wait
    * @param {boolean} options.refresh
    */
   async action (options) {
@@ -119,9 +122,14 @@ class PrMergeCommand {
    * @param {boolean} options.continue
    * @param {boolean} options.admin
    * @param {boolean} options.refresh
+   * @param {boolean} options.wait
    */
   async actionWithoutFlux (options) {
     console.log(blue('Merging pull request without flux'))
+
+    const prUrl = await $('gh pr view --json url --jq .url', { loading: false, disableLog: true })
+
+    console.log(blue(`Pull request ${prUrl}`))
 
     const remoteInfo = await $('git remote show origin')
     // @ts-ignore
@@ -155,19 +163,24 @@ class PrMergeCommand {
     // 1. Try Admin Merge first (faster, ignores checks)
     const mergeStatus = await merge({ admin: options.admin })
 
-    if (mergeStatus === 'pending') {
-      console.log(yellow('Merge operation is pending'))
-      return
-    }
-
     if (mergeStatus === 'failed') {
       console.log(red('Merge operation failed'))
       return
     }
 
+    if (mergeStatus === 'pending') {
+      console.log(yellow('Merge operation is pending'))
+
+      if (options.wait) {
+        console.log(blue('Waiting for merge to complete...'))
+        await waitForMergeCompletion({ currentBranch })
+      }
+
+      return
+    }
+
     if (mergeStatus === 'done') {
       console.log(green('Merge operation completed'))
-      return
     }
 
     console.log(blue('Canceling runs'))
@@ -205,7 +218,7 @@ async function merge ({ admin }) {
       command: 'gh pr merge --squash --auto --delete-branch',
       message: 'Trying auto merge',
       failMessage: 'Auto merge failed',
-      successMessage: 'Auto merge completed',
+      successMessage: 'Auto merge enabled',
       mergeStatus: 'pending'
     },
     {
@@ -222,7 +235,6 @@ async function merge ({ admin }) {
   mergeTypes.sort((a, b) => a.priority - b.priority)
 
   for (const mergeType of mergeTypes) {
-    console.log()
     console.log(blue(mergeType.message))
     const result = await $(mergeType.command, {
       stdio: 'pipe',
@@ -451,5 +463,91 @@ async function moveCardToMergedStage (card) {
   })
 
   return true
+}
+
+/**
+ * @param {Object} options
+ * @param {string} options.currentBranch
+ */
+async function waitForMergeCompletion ({ currentBranch }) {
+  const maxRetries = 300
+  let retries = 0
+
+  const loading = ora({ text: 'Waiting for merge completion' })
+    .start()
+
+  while (retries < maxRetries) {
+    await sleep(1000)
+
+    const state = await $('gh pr view ' + currentBranch + ' --json state --jq .state', { loading: false, disableLog: true })
+
+    const statusCheckRollup = await $('gh pr view ' + currentBranch + ' --json statusCheckRollup --jq .statusCheckRollup', { loading: false, disableLog: true, json: true })
+      .then((result) => {
+        // @ts-ignore
+        return result.map((item) => {
+          return {
+            name: item.name,
+            status: item.status.toLowerCase(),
+            conclusion: item.conclusion.toLowerCase(),
+            detailsUrl: item.detailsUrl
+          }
+          // @ts-ignore
+        }).sort((a, b) => a.name.localeCompare(b.name))
+      })
+
+    // @ts-ignore
+    const statusMaxWidth = Math.max(...statusCheckRollup.map((item) => item.status.length))
+    // @ts-ignore
+    const conclusionMaxWidth = Math.max(...statusCheckRollup.map((item) => item.conclusion.length))
+    // @ts-ignore
+    statusCheckRollup.forEach((item) => {
+      item.status = padEnd(item.status, statusMaxWidth)
+      item.conclusion = padEnd(item.conclusion, conclusionMaxWidth)
+    })
+
+    const text = ['Waiting for merge completion state is ' + blue(state), '']
+
+    statusCheckRollup.forEach((/** @type {{ name: string; conclusion: string; status: string; detailsUrl: string; }} */ item) => {
+      const color = item.conclusion === 'success' ? green : item.conclusion === 'failure' ? red : yellow
+
+      text.push('- ' + color(item.status + ' ' + item.conclusion) + ' ' + item.name + ' ' + gray(item.detailsUrl))
+    })
+
+    loading.text = text.join('\n')
+
+    const someCheckFailed = statusCheckRollup.some((/** @type {{ conclusion: string; }} */ item) => item.conclusion === 'failure')
+    if (someCheckFailed) {
+      console.log(text.join('\n'))
+      loading.stopAndPersist({
+        symbol: '⚠',
+        text: red('Merge operation failed')
+      })
+      break
+    }
+
+    if (state === 'MERGED') {
+      console.log(text.join('\n'))
+      loading.stopAndPersist({
+        symbol: '✔',
+        text: green('Merge operation completed')
+      })
+      break
+    }
+
+    if (state !== 'OPEN') {
+      console.log(text.join('\n'))
+      loading.stopAndPersist({
+        symbol: '⚠',
+        text: red('Merge operation not completed')
+      })
+      break
+    }
+
+    retries++
+  }
+
+  if (retries === maxRetries) {
+    loading.warn('Merge operation not completed after 5 minutes')
+  }
 }
 export default new PrMergeCommand()

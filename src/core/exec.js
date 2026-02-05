@@ -17,10 +17,12 @@ const { gray } = chalk
  * @param {string} [options.cwd] - working directory (default: process.cwd())
  * @param {number} [options.timeout] - timeout in milliseconds
  * @param {AbortSignal} [options.signal] - abort signal
+ * @param {boolean} [options.disableLog] - do not log command (default: false)
  * @returns {Promise<string | Object>} - command output
  */
 export async function $ (command, options) {
   options = options || {}
+  options.disableLog = typeof options.disableLog === 'boolean' ? options.disableLog : false
   options.reject = typeof options.reject === 'boolean' ? options.reject : true
   options.returnProperty = options.returnProperty || 'stdout'
   options.loading = typeof options.loading === 'boolean' ? options.loading : true
@@ -29,7 +31,7 @@ export async function $ (command, options) {
     ? ora({ text: command }).start()
     : null
 
-  if (!options.loading) {
+  if (!options.loading && !options.disableLog) {
     console.log(gray('>'), command)
   }
 
