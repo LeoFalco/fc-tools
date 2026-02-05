@@ -6,10 +6,11 @@ class DependabotRebaseCommand {
     program
       .command('dependabot-rebase')
       .description('list all Dependabot and Renovate PRs, comment rebase on each, and enable auto-merge')
+      .option('--merge', 'Merge the PRs', false)
       .action(this.action.bind(this))
   }
 
-  async action () {
+  async action (options) {
     const allPrs = await $('gh pr list --json number,author', { json: true })
     const prs = allPrs.filter(pr => {
       const author = pr.author.login.toLowerCase()
@@ -28,9 +29,11 @@ class DependabotRebaseCommand {
       const botName = author.login.toLowerCase().includes('dependabot') ? 'dependabot' : 'renovate'
       await $(`gh pr comment ${number} --body @${botName}\\ rebase`)
 
-      await $(`gh pr merge ${number} --auto --squash`).catch((error) => {
-        info(`Failed to merge PR #${number}.`, error.message)
-      })
+      if (options.merge) {
+        await $(`gh pr merge ${number} --auto --squash`).catch((error) => {
+          info(`Failed to merge PR #${number}.`, error.message)
+        })
+      }
     }
 
     info('Successfully processed all Dependabot PRs.')
