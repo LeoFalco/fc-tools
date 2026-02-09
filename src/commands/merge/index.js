@@ -30,6 +30,7 @@ class PrMergeCommand {
       .option('--admin', 'use admin merge', false)
       .option('--wait', 'wait for merge to complete', false)
       .option('--refresh', 'refresh pull request data while merging', false)
+      .option('--approve', 'approve pull request before merging', false)
   }
 
   /**
@@ -123,6 +124,7 @@ class PrMergeCommand {
    * @param {boolean} options.admin
    * @param {boolean} options.refresh
    * @param {boolean} options.wait
+   * @param {boolean} options.approve
    */
   async actionWithoutFlux (options) {
     console.log(blue('Merging pull request without flux'))
@@ -159,6 +161,10 @@ class PrMergeCommand {
         )
       )
     ).flat()
+
+    if (options.approve) {
+      await approve({ currentBranch })
+    }
 
     // 1. Try Admin Merge first (faster, ignores checks)
     const mergeStatus = await merge({ admin: options.admin })
@@ -508,8 +514,8 @@ async function waitForMergeCompletion ({ currentBranch }) {
     const text = ['Waiting for merge completion state is ' + blue(state), '']
 
     statusCheckRollup.forEach((/** @type {{ name: string; conclusion: string; status: string; detailsUrl: string; }} */ item) => {
-      const status = item.conclusion || item.status
-      const color = status.includes('success') ? green : status.includes('failure') ? red : yellow
+      const status = item.status || 'pending'
+      const color = status.includes('success') || status.includes('completed') ? green : status.includes('failure') ? red : yellow
       text.push('- ' + color(status) + ' ' + item.name + ' ' + gray(item.detailsUrl))
     })
 
@@ -550,4 +556,32 @@ async function waitForMergeCompletion ({ currentBranch }) {
     loading.warn('Merge operation not completed after 5 minutes')
   }
 }
+
+/**
+ * @param {Object} options
+ * @param {string} options.currentBranch
+ */
+async function approve ({ currentBranch }) {
+  console.log(blue('Approving pull request'))
+
+  const reviewDecision = await $('gh pr view ' + currentBranch + ' --json reviewDecision --jq .reviewDecision')
+
+  if (reviewDecision === 'APPROVED') {
+    console.log(green('Pull request already approved'))
+    return
+  }
+
+  const hasMyReview = await $('gh pr view ' + currentBranch + ' --json reviews', { json: true })
+    // @ts-ignore
+    .then(result => {
+      console.log(result)
+      return result?.reviews.some(review => review.author.login === 'LeoFalco' && review.state === 'APPROVED')
+    })
+
+  if (!hasMyReview) {
+    await $('gh pr review ' + currentBranch + ' --approve', { stdio: 'inherit', loading: false, reject: false })
+    console.log(green('Pull request approved'))
+  }
+}
+
 export default new PrMergeCommand()
