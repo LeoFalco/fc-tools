@@ -18,7 +18,7 @@ const { gray } = chalk
  * @param {number} [options.timeout] - timeout in milliseconds
  * @param {AbortSignal} [options.signal] - abort signal
  * @param {boolean} [options.disableLog] - do not log command (default: false)
- * @returns {Promise<string | Object>} - command output
+ * @returns {Promise<string | null | Object>} - command output
  */
 export async function $ (command, options) {
   options = options || {}
@@ -72,5 +72,13 @@ export async function $ (command, options) {
 
   const returnValueAsString = typeof returnValue === 'string' ? returnValue.trim() : returnValue
 
-  return options.json ? JSON.parse(returnValueAsString) : returnValueAsString
+  if (!options.json) {
+    return returnValueAsString
+  }
+
+  if (!returnValueAsString) {
+    return null
+  }
+
+  return JSON.parse(returnValueAsString)
 }

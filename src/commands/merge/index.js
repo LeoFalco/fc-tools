@@ -514,8 +514,8 @@ async function waitForMergeCompletion ({ currentBranch }) {
     const text = ['Waiting for merge completion state is ' + blue(state), '']
 
     statusCheckRollup.forEach((/** @type {{ name: string; conclusion: string; status: string; detailsUrl: string; }} */ item) => {
-      const status = item.conclusion || item.status
-      const color = status.includes('success') ? green : status.includes('failure') ? red : yellow
+      const status = item.status || 'pending'
+      const color = status.includes('success') || status.includes('completed') ? green : status.includes('failure') ? red : yellow
       text.push('- ' + color(status) + ' ' + item.name + ' ' + gray(item.detailsUrl))
     })
 
@@ -564,8 +564,24 @@ async function waitForMergeCompletion ({ currentBranch }) {
 async function approve ({ currentBranch }) {
   console.log(blue('Approving pull request'))
 
-  const reviews = await $('gh pr view ' + currentBranch + ' --json reviews --jq .reviews', { json: true })
+  const reviewDecision = await $('gh pr view ' + currentBranch + ' --json reviewDecision --jq .reviewDecision')
 
-  console.log(reviews)
+  if (reviewDecision === 'APPROVED') {
+    console.log(green('Pull request already approved'))
+    return
+  }
+
+  const hasMyReview = await $('gh pr view ' + currentBranch + ' --json reviews', { json: true })
+    // @ts-ignore
+    .then(result => {
+      console.log(result)
+      return result?.reviews.some(review => review.author.login === 'LeoFalco' && review.state === 'APPROVED')
+    })
+
+  if (!hasMyReview) {
+    await $('gh pr review ' + currentBranch + ' --approve', { stdio: 'inherit', loading: false, reject: false })
+    console.log(green('Pull request approved'))
+  }
 }
+
 export default new PrMergeCommand()
