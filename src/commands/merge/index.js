@@ -30,6 +30,7 @@ class PrMergeCommand {
       .option('--admin', 'use admin merge', false)
       .option('--wait', 'wait for merge to complete', false)
       .option('--refresh', 'refresh pull request data while merging', false)
+      .option('--approve', 'approve pull request before merging', false)
   }
 
   /**
@@ -123,6 +124,7 @@ class PrMergeCommand {
    * @param {boolean} options.admin
    * @param {boolean} options.refresh
    * @param {boolean} options.wait
+   * @param {boolean} options.approve
    */
   async actionWithoutFlux (options) {
     console.log(blue('Merging pull request without flux'))
@@ -159,6 +161,10 @@ class PrMergeCommand {
         )
       )
     ).flat()
+
+    if (options.approve) {
+      await approve({ currentBranch })
+    }
 
     // 1. Try Admin Merge first (faster, ignores checks)
     const mergeStatus = await merge({ admin: options.admin })
@@ -549,5 +555,17 @@ async function waitForMergeCompletion ({ currentBranch }) {
   if (retries === maxRetries) {
     loading.warn('Merge operation not completed after 5 minutes')
   }
+}
+
+/**
+ * @param {Object} options
+ * @param {string} options.currentBranch
+ */
+async function approve ({ currentBranch }) {
+  console.log(blue('Approving pull request'))
+
+  const reviews = await $('gh pr view ' + currentBranch + ' --json reviews --jq .reviews', { json: true })
+
+  console.log(reviews)
 }
 export default new PrMergeCommand()
