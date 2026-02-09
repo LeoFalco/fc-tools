@@ -24,9 +24,12 @@ class PrCreateCommand {
   install ({ program }) {
     program
       .command('pr-create')
-      .description('create a new pull request based con current branch')
-      .option('-g, --generate,', 'use ia to generate pr description')
+      .description('create a new pull request based on current branch')
+      .option('-b, --branch <branch>', 'optional branch name to checkout')
+      .option('-m, --message <message>', 'optional commit message to use instead of the current one')
+      .option('-g, --generate', 'use ia to generate pr description')
       .option('-f, --fix', 'add hotfix label to the pull request')
+      .option('--body-file <path>', 'file path to use as pr description')
       .action(this.action.bind(this))
   }
 
@@ -34,9 +37,26 @@ class PrCreateCommand {
    * @param {Object} options
    * @param {boolean | undefined} options.generate
    * @param {boolean | undefined} options.fix
+   * @param {string | undefined} options.branch
+   * @param {string | undefined} options.message
+   * @param {string | undefined} options.bodyFile
    */
   async action (options) {
-    const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
+    if (options.generate && options.bodyFile) {
+      error('--generate and --body-file are mutually exclusive')
+      process.exit(1)
+    }
+
+    if (options.branch) {
+      await $(`git checkout ${options.branch}`)
+    }
+
+    const currentBranchName = options.branch || await $('git rev-parse --abbrev-ref HEAD')
+
+    if (options.message) {
+      await $('git add -A')
+      await $(`git commit -m "${options.message}"`)
+    }
 
     await $(`git push -u origin ${currentBranchName} -f --no-verify`,
       {
@@ -66,18 +86,24 @@ class PrCreateCommand {
       commitMessage
     })
 
-    const completion = options.generate
-      ? await generateFieldNewsSuggestion({
-        pullRequestTitle,
-        repoDescription
-      })
-      : ''
+    let pullRequestDescription = ''
 
-    const pullRequestDescription = await buildPullRequestDescription({
-      repoPath,
-      currentBranchName,
-      completion
-    })
+    if (options.bodyFile) {
+      pullRequestDescription = await readFile(options.bodyFile, { encoding: 'utf8' })
+    } else {
+      const completion = options.generate
+        ? await generateFieldNewsSuggestion({
+          pullRequestTitle,
+          repoDescription
+        })
+        : ''
+
+      pullRequestDescription = await buildPullRequestDescription({
+        repoPath,
+        currentBranchName,
+        completion
+      })
+    }
 
     const query = `#graphql
       query {
