@@ -48,14 +48,31 @@ class PrCreateCommand {
     }
 
     if (options.branch) {
-      await $(`git checkout ${options.branch}`)
+      const branchExists = await $('git rev-parse --verify ' + options.branch)
+        .catch(() => false)
+
+      if (branchExists) {
+        await $(`git checkout ${options.branch}`)
+      } else {
+        await $(`git checkout -b ${options.branch}`)
+      }
     }
 
-    const currentBranchName = options.branch || await $('git rev-parse --abbrev-ref HEAD')
+    const currentBranchName = await $('git rev-parse --abbrev-ref HEAD')
 
     if (options.message) {
-      await $('git add -A')
-      await $(`git commit -m "${options.message}"`)
+      const needsCommit = await $('git status --porcelain')
+        // @ts-ignore
+        .then(result => Boolean(result?.stdout?.toString().trim()))
+
+      if (needsCommit) {
+        const message = options.message.replaceAll(' ', '\\ ')
+
+        await $('git add -A')
+        await $('git commit -m' + message)
+      } else {
+        warn('No changes to commit')
+      }
     }
 
     await $(`git push -u origin ${currentBranchName} -f --no-verify`,
@@ -105,81 +122,12 @@ class PrCreateCommand {
       })
     }
 
-    const query = `#graphql
-      query {
-        organization(login: "${owner}") {
-          myTeams: teams(first: 10, role: MEMBER) {
-            nodes {
-              slug
-              members(first: 50) {
-                nodes {
-                  login
-                }
-              }
-            }
-          }
-          repoTeams: teams(first: 10) {
-            nodes {
-              slug
-              members(first: 50) {
-                nodes {
-                  login
-                }
-              }
-              repositories(first: 10, query: "${repoName}") {
-                nodes {
-                  name
-                }
-              }
-            }
-          }
-        }
-      }
-    `
-
-    const teams = await octokit.graphql(query)
-      .catch((err) => {
-        warn(`Failed do request teams\n${err.message}`)
-        return null
-      })
-
-    const myTeams = teams ? teams.organization.myTeams.nodes : []
-    // @ts-ignore
-    const repoTeams = teams ? teams.organization.repoTeams.nodes.filter(repo => repo.repositories.nodes.length) : []
-
-    const allTeams = (teams ? myTeams.concat(repoTeams) : [])
-      .filter(team => team.slug !== 'fieldevelopers')
-      .filter(team => !team.slug.startsWith('fieldhack'))
-
-    info('My teams: ' + myTeams.map(team => team.slug).join(', '))
-    info('Repo teams: ' + repoTeams.map(team => team.slug).join(', '))
-
-    const teamMap = {}
-    for (const team of allTeams) {
-      const teamName = owner + '/' + team.slug
-      if (teamMap[teamName]) continue
-
-      const teamMembers = team.members.nodes.map(member => member.login)
-      teamMap[teamName] = teamMembers
-
-      info(`Team ${teamName} members: ${teamMembers.join(', ')}`)
-    }
-
-    // const teamNames = Object.keys(teamMap)
-    // const teamMembers = Object.values(teamMap).flat()
-
-    // const reviewers = teamNames
-    //   .concat(teamMembers)
-    //   .concat(['pedroaugusto2002', 'tauk7', 'giovanalmeida2'])
-    //   .filter(value => value !== 'lfreneda')
-    //   .filter(value => value !== 'IgorMoraes15')
-
     await mkdir(PR_DESCRIPTION_FOLDER_PATH, { recursive: true })
     await writeFile(PR_DESCRIPTION_FILE_PATH, pullRequestDescription)
 
-    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --head ${currentBranchName} --body-file ${PR_DESCRIPTION_FILE_PATH}`)
+    await $(`gh pr create --assignee @me --title ${escape(pullRequestTitle)} --head ${currentBranchName} --body-file ${PR_DESCRIPTION_FILE_PATH} `)
       .catch((err) => {
-        error(`Failed to open pr.\n${err.message}`)
+        error(`Failed to open pr.\n${err.message} `)
         console.error(err)
         process.exit(1)
       })
@@ -188,13 +136,14 @@ class PrCreateCommand {
 
     if (options.fix) {
       const hotfixLabelName = await $('gh label list --json name --jq ".[].name"')
-        .then((names) => names.split('\n').map(name => name.trim()).filter(Boolean))
-        .then((names) => names.filter(name => name.includes('fix')))
-        .then((names) => names[0] || null)
+        // @ts-ignore
+        .then((names) => names?.split('\n').map(name => name.trim()).filter(Boolean))
+        .then((names) => names?.filter((/** @type {string | string[]} */ name) => name.includes('fix')))
+        .then((names) => names?.[0] || null)
 
       if (hotfixLabelName) {
-        info(`Adding hotfix label: ${hotfixLabelName}`)
-        await $(`gh pr edit --add-label '${hotfixLabelName}'`)
+        info(`Adding hotfix label: ${hotfixLabelName} `)
+        await $(`gh pr edit--add - label '${hotfixLabelName}'`)
       } else {
         info('Creating and adding hotfix label: hotfix 🔥')
         await $("gh label create 'hotfix 🔥' --color ff0000 --description 'Hotfix label'")
@@ -203,7 +152,7 @@ class PrCreateCommand {
       }
     }
 
-    info(`pr opened ${url}`)
+    info(`pr opened ${url} `)
   }
 }
 
@@ -354,7 +303,7 @@ async function buildPullRequestDescription ({ repoPath, currentBranchName, compl
   const prTemplatePath = repoPath + '/.github/pull_request_template.md'
   const prTemplate = await readFile(prTemplatePath, { encoding: 'utf8' }).catch(() => null)
   const issueNumber = issueNumberFromBranch({ currentBranchName })
-  const closesMessage = issueNumber && `- closes #${issueNumber}`
+  const closesMessage = issueNumber && `- closes #${issueNumber} `
   const content = [prTemplate, closesMessage].filter(Boolean).join('\n\n')
 
   if (completion) {
