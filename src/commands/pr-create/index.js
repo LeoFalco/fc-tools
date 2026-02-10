@@ -62,8 +62,6 @@ class PrCreateCommand {
 
     if (options.message) {
       const needsCommit = await $('git status --porcelain')
-        // @ts-ignore
-        .then(result => Boolean(result?.stdout?.toString().trim()))
 
       if (needsCommit) {
         const message = options.message.replaceAll(' ', '\\ ')
