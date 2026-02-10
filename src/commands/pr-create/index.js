@@ -73,18 +73,14 @@ class PrCreateCommand {
       }
     }
 
-    await $(`git push -u origin ${currentBranchName} -f --no-verify`,
-      {
-        loading: false,
-        stdio: 'inherit'
-      }
-    )
+    await $(`git push -u origin ${currentBranchName} -f --no-verify`)
+
     const token = await $('gh auth token')
     const octokit = new Octokit({ auth: token })
 
-    const repoNameWithOwner = await $('gh repo view --json nameWithOwner --jq .nameWithOwner')
+    const repoNameWithOwner = await $('gh repo view --json nameWithOwner --jq .nameWithOwner').then((res) => res?.toString().trim() || '')
 
-    const [owner, repoName] = repoNameWithOwner.toString().split('/')
+    const [owner, repoName] = repoNameWithOwner.split('/')
 
     const repo = await octokit.rest.repos.get({
       owner,
