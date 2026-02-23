@@ -389,7 +389,7 @@ async function mergeCardPrs (card, options) {
 
     const isOpen = state.includes('OPEN')
     if (isOpen) {
-      const result = await $(`gh pr merge ${pullRequest.url} -d -r --admin`, { reject, stdio: 'pipe', loading: false, returnProperty: 'all' })
+      const result = await $(`gh pr merge ${pullRequest.url} -d -s --admin`, { reject, stdio: 'pipe', loading: false, returnProperty: 'all' })
 
       // @ts-ignore
       if (!result.success) {
