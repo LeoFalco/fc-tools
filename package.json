@@ -44,7 +44,7 @@
     "dotenv": "17.3.1",
     "execa": "9.6.1",
     "googleapis": "171.4.0",
-    "inquirer": "13.2.2",
+    "inquirer": "13.3.0",
     "lodash-es": "4.17.23",
     "node-notifier": "10.0.1",
     "octokit": "5.0.5",
