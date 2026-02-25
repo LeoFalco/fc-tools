@@ -93,7 +93,7 @@ class PrMergeCommand {
       console.log(green('All done!'))
       console.log('You can check the cards at https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table')
       console.log('you can check the jobs with')
-      console.log('  field merged --from=today --to=today --team=CMMS')
+      console.log('  field merged --from=today --to=today --team=GRID')
 
       const everyCardMoved = cards.every(card => card.moved === true)
       if (everyCardMoved) {

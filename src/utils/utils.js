@@ -123,7 +123,7 @@ export function coloredConclusion (conclusion) {
  */
 export function getTeamByAssignee (assignee) {
   for (const item of Object.keys(TEAMS)) {
-    if (item === 'TODOS' || item === 'CMMS' || item === 'FSM') continue
+    if (item === 'TODOS' || item === 'GRID' || item === 'FSM') continue
     if (TEAMS[item].includes(assignee)) return item
   }
 

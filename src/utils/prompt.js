@@ -25,7 +25,7 @@ export async function promptTeam (options) {
       message: 'Por favor selecione o time que deseja analisar',
       name: 'team',
       choices: Object.keys(TEAMS),
-      default: options.team || TEAMS.CMMS,
+      default: options.team || TEAMS.GRID,
       validate: notNullValidator('Por favor selecione um time')
     }
   ])

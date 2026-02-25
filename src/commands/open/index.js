@@ -21,7 +21,7 @@ class PrOpenedCommand {
    * @param {Object} options
    */
   async action (options) {
-    const stages = await fluxClient.getPipe({ pipeId: PIPES.CMMS_PROJECT })
+    const stages = await fluxClient.getPipe({ pipeId: PIPES.GRID_PROJECT })
 
     console.log('Open Pull Requests:\n')
 
