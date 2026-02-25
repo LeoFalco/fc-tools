@@ -14,7 +14,7 @@ export const STAGES = Object.freeze({
 })
 
 export const PIPES = Object.freeze({
-  CMMS_PROJECT: 'e1e2a518-ad83-4a3b-8fd6-3b42bd4d5151'
+  GRID_PROJECT: 'e1e2a518-ad83-4a3b-8fd6-3b42bd4d5151'
 })
 
 client.interceptors.request.use((config) => {

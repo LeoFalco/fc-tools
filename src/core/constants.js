@@ -1,18 +1,22 @@
 import { uniq } from 'lodash-es'
 
 const TEMP_PROJECT_TEAM_MEMBERS = [
-  'LeoFalco',
-  'Carlos-F-Braga'
 ]
-const CMMS_PROJECT_TEAM_MEMBERS = [
+const GRID_PROJECT_TEAM_MEMBERS = [
   'LeoFalco',
+  'lfreneda',
+  'leandroaugusto470',
   'lilian-caballero',
-  'tauk7'
+  'DeividTheodoroLima',
+  'Carlos-F-Braga',
+  'rafagfran',
+  'eduamorimm',
+  'PedroH-araujo',
+  'tauk7',
+  'MarianaLebrao'
 ]
 
-const CMMS_MAINTENANCE_TEAM_MEMBERS = [
-  'eduamorimm',
-  'pedroaugusto2002'
+const GRID_MAINTENANCE_TEAM_MEMBERS = [
 ]
 
 const FSM_PROJECT_TEAM_MEMBERS = [
@@ -24,7 +28,6 @@ const FSM_PROJECT_TEAM_MEMBERS = [
 
 const FSM_MAINTENANCE_TEAM_MEMBERS = [
   'AndreTrevizam',
-  'Carlos-F-Braga',
   'rafaelcaniello',
   'Miguel01Santos',
   'LucasDelamura-Field',
@@ -41,19 +44,19 @@ const QUALITY_TEAM = [
 
 const TEAMS = {
   TEMP: [...TEMP_PROJECT_TEAM_MEMBERS].sort(),
-  TODOS: [...CMMS_PROJECT_TEAM_MEMBERS, ...CMMS_MAINTENANCE_TEAM_MEMBERS, ...FSM_PROJECT_TEAM_MEMBERS, ...FSM_MAINTENANCE_TEAM_MEMBERS].sort(),
-  CMMS: [...CMMS_PROJECT_TEAM_MEMBERS, ...CMMS_MAINTENANCE_TEAM_MEMBERS].sort(),
+  TODOS: [...GRID_PROJECT_TEAM_MEMBERS, ...GRID_MAINTENANCE_TEAM_MEMBERS, ...FSM_PROJECT_TEAM_MEMBERS, ...FSM_MAINTENANCE_TEAM_MEMBERS].sort(),
+  GRID: [...GRID_PROJECT_TEAM_MEMBERS, ...GRID_MAINTENANCE_TEAM_MEMBERS].sort(),
   FSM: [...FSM_PROJECT_TEAM_MEMBERS, ...FSM_MAINTENANCE_TEAM_MEMBERS].sort(),
-  'CMMS Projetos': CMMS_PROJECT_TEAM_MEMBERS.sort(),
-  'CMMS Sustentação': CMMS_MAINTENANCE_TEAM_MEMBERS.sort(),
+  'GRID Projetos': GRID_PROJECT_TEAM_MEMBERS.sort(),
+  'GRID Sustentação': GRID_MAINTENANCE_TEAM_MEMBERS.sort(),
   'FSM Projetos': FSM_PROJECT_TEAM_MEMBERS.sort(),
   'FSM Sustentação': FSM_MAINTENANCE_TEAM_MEMBERS.sort()
 }
 
 const ALL_MEMBERS = uniq([
   ...TEMP_PROJECT_TEAM_MEMBERS,
-  ...CMMS_PROJECT_TEAM_MEMBERS,
-  ...CMMS_MAINTENANCE_TEAM_MEMBERS,
+  ...GRID_PROJECT_TEAM_MEMBERS,
+  ...GRID_MAINTENANCE_TEAM_MEMBERS,
   ...FSM_PROJECT_TEAM_MEMBERS,
   ...FSM_MAINTENANCE_TEAM_MEMBERS,
   ...QUALITY_TEAM
