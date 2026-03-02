@@ -192,11 +192,21 @@ async function startPublishPooling (pulls) {
 
 const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
 
+function formatDate (dateStr) {
+  return format(parseISO(dateStr), 'dd/MM/yyyy', { locale: ptBR })
+}
+
 async function sendToGoogleChat (pulls, team, from, to) {
-  const today = format(new Date(), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
+  const formattedFrom = formatDate(from)
+  const formattedTo = formatDate(to)
+  const period = formattedFrom === formattedTo
+    ? formattedFrom
+    : `${formattedFrom} a ${formattedTo}`
+
+  const title = `*PRs publicados - ${team} - ${period}*`
 
   if (pulls.length === 0) {
-    const text = `*PRs publicados - ${team} - ${today}*\n\nNenhum PR publicado no período de ${from} a ${to}.`
+    const text = `${title}\n\nNenhum PR publicado no período.`
     await axios.post(GOOGLE_CHAT_WEBHOOK_URL, { text }, {
       headers: { 'Content-Type': 'application/json; charset=UTF-8' }
     })
@@ -205,8 +215,7 @@ async function sendToGoogleChat (pulls, team, from, to) {
     return
   }
 
-  const lines = [`*PRs publicados - ${team} - ${today}*`]
-  lines.push(`Período: ${from} a ${to}`)
+  const lines = [title]
 
   const grouped = chain(pulls)
     .groupBy((pull) => pull.author?.login)
