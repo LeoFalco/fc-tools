@@ -72,7 +72,7 @@ class PrOpenedCommand {
           pull.age = age
 
           const teamReviewers = TEAMS[team].filter((login) => login !== pull.author?.login)
-          const approvedReviewers = pull.reviews.nodes.filter((review) => review.state === 'APPROVED').map((review) => review.author?.login)
+          const approvedReviewers = pull.reviews.nodes.filter((/** @type {{ state: string; }} */ review) => review.state === 'APPROVED').map((/** @type {{ author: { login: any; }; }} */ review) => review.author?.login)
           const missingReviewers = teamReviewers.filter((login) => !approvedReviewers.includes(login))
           pull.missingReviewers = missingReviewers
           return pull
@@ -82,6 +82,11 @@ class PrOpenedCommand {
         .value()
     })
 
+    const pullsSortedByAuthorAndAge = chain(pulls)
+      .sortBy((pull) => -pull.age)
+      .sortBy((pull) => pull.author?.login)
+      .value()
+
     console.log('')
     console.log('PRs abertos')
     console.log(chalkTable({
@@ -89,6 +94,7 @@ class PrOpenedCommand {
         { field: 'link', name: chalk.cyan('Link') },
         { field: 'title', name: chalk.cyan('Title') },
         { field: 'author', name: chalk.cyan('Author') },
+        { field: 'age', name: chalk.cyan('Age') },
         { field: 'ready', name: chalk.cyan('Draft') },
         { field: 'mergeable', name: chalk.cyan('Mergeable') },
         { field: 'checks', name: chalk.cyan('Checks') },
@@ -96,7 +102,7 @@ class PrOpenedCommand {
         { field: 'notRejected', name: chalk.cyan('Approved') },
         { field: 'quality', name: chalk.cyan('Quality') }
       ]
-    }, pulls.map((pull) => {
+    }, pullsSortedByAuthorAndAge.map((pull) => {
       return {
         ready: pull.ready ? chalk.green('✓') : chalk.red('✕'),
         mergeable: pull.mergeable ? chalk.green('✓') : chalk.red('✕'),
@@ -106,6 +112,7 @@ class PrOpenedCommand {
         quality: pull.quality ? chalk.green('✓') : chalk.red('✕'),
         link: pull.url,
         author: pull.author?.login,
+        age: pull.age + 'd',
         title: pull.title.substring(0, 60) + (pull.title.length > 60 ? '...' : '')
       }
     })))
@@ -139,38 +146,6 @@ class PrOpenedCommand {
         title: pull.title
       }
     })))
-
-    const teamMembers = TEAMS[team]
-
-    for (const teamMember of teamMembers) {
-      const prsWithoutMemberApproval = pulls
-        .filter((pull) => pull.missingReviewers?.includes(teamMember))
-        .filter((pull) => !pull.approved)
-        .filter((pull) => pull.notRejected)
-        .filter((pull) => pull.mergeable)
-        .filter((pull) => pull.checks)
-        .filter((pull) => pull.ready)
-
-      const prsWithMemberApprovalCount = pulls.filter((pull) => !pull.missingReviewers?.includes(teamMember)).length
-
-      console.log('')
-      console.log(`Prs com review de ${teamMember}`, prsWithMemberApprovalCount)
-      console.log(`PRs com review pendente de ${teamMember}`)
-
-      console.log(chalkTable({
-        columns: [
-          { field: 'link', name: chalk.cyan('Link') },
-          { field: 'title', name: chalk.cyan('Title') },
-          { field: 'author', name: chalk.cyan('Author') }
-        ]
-      }, prsWithoutMemberApproval.map((pull) => {
-        return {
-          link: pull.url,
-          author: pull.author?.login,
-          title: pull.title
-        }
-      })))
-    }
 
     const memberStats = chain(pulls)
       .groupBy((pull) => pull.author?.login)
