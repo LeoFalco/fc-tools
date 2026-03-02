@@ -1,4 +1,4 @@
-name: Continuous integration/deployment
+name: Continuous integration
 
 permissions:
   contents: read
