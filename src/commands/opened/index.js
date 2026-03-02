@@ -210,7 +210,7 @@ class PrOpenedCommand {
   }
 }
 
-const GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/AAQA_Lzin3I/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=pm8mDa8psYnX0bhz245pfq5KX0v5wuJbx8CqVojt1mU'
+const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
 
 async function sendToGoogleChat (pulls, memberStats, team) {
   const today = format(new Date(), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
