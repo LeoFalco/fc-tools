@@ -10,6 +10,11 @@ dotEnv.config({
   quiet: true
 })
 
+function getToken () {
+  if (process.env.GH_TOKEN) return process.env.GH_TOKEN
+  return execSync('gh auth token').toString().trim()
+}
+
 export const octokit = new Octokit({
-  auth: execSync('gh auth token').toString().trim()
+  auth: getToken()
 })
