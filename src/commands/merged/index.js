@@ -1,8 +1,10 @@
 // @ts-check
 
+import axios from 'axios'
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
 import { differenceInBusinessDays, format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toZonedTime } from 'date-fns-tz'
 import { chain } from 'lodash-es'
 import { TEAMS } from '../../core/constants.js'
@@ -26,6 +28,7 @@ class PrMergedCommand {
       .option('-f, --from <from>', 'from date yyyy-mm-dd')
       .option('-t, --to <to>', 'to date yyyy-mm-dd')
       .option('--team <team>', 'team to analyze')
+      .option('--chat', 'send output to google chat webhook')
       .action(this.action.bind(this))
   }
 
@@ -34,6 +37,7 @@ class PrMergedCommand {
    * @param {string | undefined} options.from
    * @param {string | undefined} options.to
    * @param {string | undefined} options.team
+   * @param {boolean | undefined} options.chat
    */
   async action (options) {
     console.log('List pull requests options', options)
@@ -109,6 +113,10 @@ class PrMergedCommand {
     console.log('')
 
     await startPublishPooling(pulls)
+
+    if (options.chat) {
+      await sendToGoogleChat(pulls, team, from, to)
+    }
   }
 }
 
@@ -180,6 +188,78 @@ async function startPublishPooling (pulls) {
     const cleanLinesCount = pulls.length + 1
     process.stdout.moveCursor(0, -cleanLinesCount)
   }
+}
+
+const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
+
+async function sendToGoogleChat (pulls, team, from, to) {
+  const today = format(new Date(), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
+
+  if (pulls.length === 0) {
+    const text = `*PRs publicados - ${team} - ${today}*\n\nNenhum PR publicado no período de ${from} a ${to}.`
+    await axios.post(GOOGLE_CHAT_WEBHOOK_URL, { text }, {
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+    })
+    console.log('')
+    console.log('Mensagem enviada para o Google Chat!')
+    return
+  }
+
+  const lines = [`*PRs publicados - ${team} - ${today}*`]
+  lines.push(`Período: ${from} a ${to}`)
+
+  const grouped = chain(pulls)
+    .groupBy((pull) => pull.author?.login)
+    .value()
+
+  for (const [author, authorPulls] of Object.entries(grouped)) {
+    lines.push('')
+    const authorName = authorPulls[0].author?.name
+    lines.push(authorName ? `*${authorName}* (${author})` : `*${author}*`)
+    for (const pull of authorPulls) {
+      const cleanTitle = pull.title.replace(/<>/g, '-').replace(/\p{Emoji_Presentation}/gu, '').replace(/\s+/g, ' ').trim()
+      const safeTitle = cleanTitle.length > 75 ? cleanTitle.substring(0, 75) + '...' : cleanTitle
+      lines.push(`- <${pull.url}|${safeTitle}> (${pull.mergedAt})`)
+    }
+  }
+
+  const memberStats = chain(pulls)
+    .groupBy((pull) => pull.author?.login)
+    .map((memberPulls, author) => ({
+      author,
+      count: memberPulls.length
+    }))
+    .sortBy('count')
+    .reverse()
+    .value()
+
+  lines.push('')
+  lines.push('')
+  lines.push('*PRs por membro*')
+  lines.push('```')
+  const maxAuthorLen = Math.max(...memberStats.map((m) => m.author.length), 'Membro'.length)
+  lines.push(`${'Membro'.padEnd(maxAuthorLen)} | PRs`)
+  lines.push(`${'-'.repeat(maxAuthorLen)}-+----`)
+  for (const member of memberStats) {
+    lines.push(`${member.author.padEnd(maxAuthorLen)} | ${String(member.count).padStart(3)}`)
+  }
+  lines.push('```')
+
+  lines.push('')
+  lines.push('```')
+  lines.push(`Total: ${pulls.length} PRs publicados`)
+  lines.push('```')
+  lines.push('')
+  lines.push('<users/all>')
+
+  const text = lines.join('\n')
+
+  await axios.post(GOOGLE_CHAT_WEBHOOK_URL, { text }, {
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+  })
+
+  console.log('')
+  console.log('Mensagem enviada para o Google Chat!')
 }
 
 export default new PrMergedCommand()
