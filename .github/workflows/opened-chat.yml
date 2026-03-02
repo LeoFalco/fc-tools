@@ -1,4 +1,4 @@
-name: PRs abertos - Google Chat
+name: Opened prs
 
 on:
   schedule:
@@ -32,4 +32,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
-        run: node src/index.js opened --team GRID --chat
+        run:
+          gh auth status
+          node src/index.js opened --team GRID --chat
