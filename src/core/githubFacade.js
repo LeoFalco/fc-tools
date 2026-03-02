@@ -150,46 +150,42 @@ class GithubFacade {
     `
 
     const pulls = []
-    // for (const assignee of params.assignees) {
-    try {
-      // const searchQuery = `is:pr sort:merged-desc org:${params.organization} is:${params.state.toLowerCase()} merged:${params.from}..${params.to} author:${assignee}`
-      const state = params.state.toLowerCase()
-      const searchQuery = state === 'merged'
-        ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc`
-        : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc`
-      console.log('Query', searchQuery)
-      const data = await octokit.graphql(LIST_PRS_V2, {
-        searchQuery
-      })
+    const state = params.state.toLowerCase()
 
-      console.log(`Total de pull requests encontrados na busca: ${data.search.issueCount}`)
-
-      for (const pr of data.search.nodes) {
-        pulls.push({
-          number: pr.url.split('/').pop(),
-          repo: pr.repository.name,
-          url: pr.url,
-          mergedAt: pr.mergedAt,
-          author: pr.author?.login
+    for (const assignee of params.assignees) {
+      try {
+        const searchQuery = state === 'merged'
+          ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc author:${assignee}`
+          : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc author:${assignee}`
+        console.log(`Query [${assignee}]:`, searchQuery)
+        const data = await octokit.graphql(LIST_PRS_V2, {
+          searchQuery
         })
+
+        console.log(`${assignee}: ${data.search.issueCount} pull requests encontrados`)
+
+        for (const pr of data.search.nodes) {
+          pulls.push({
+            number: pr.url.split('/').pop(),
+            repo: pr.repository.name,
+            url: pr.url,
+            mergedAt: pr.mergedAt,
+            author: pr.author?.login
+          })
+        }
+      } catch (error) {
+        console.warn(red(`Erro ao buscar pull requests de ${assignee}: ${error.message}`))
       }
-    } catch (error) {
-      console.warn(red('Erro ao buscar pull requests:' + error.message))
     }
-    // }
 
     pulls.sort((a, b) => String(a.mergedAt).localeCompare(String(b.mergedAt)))
 
-    // Filter by assignees
-    const filteredByAssignee = pulls.filter(pr => params.assignees.includes(pr.author))
-
-    // If only merged PRs are needed, filter by mergedAt
-    let filteredPulls = filteredByAssignee
+    let filteredPulls = pulls
     if (params.state === 'MERGED') {
-      filteredPulls = filteredByAssignee.filter(pr => pr.mergedAt)
+      filteredPulls = pulls.filter(pr => pr.mergedAt)
     }
 
-    console.log(`Filtrado ${filteredPulls.length} pull requests para os assignees selecionados.`)
+    console.log(`Total: ${filteredPulls.length} pull requests encontrados para o time.`)
 
     let pending = filteredPulls.length
 

@@ -3,7 +3,7 @@
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
 import { format } from 'date-fns'
-import { chain, map, mean, sum } from 'lodash-es'
+import { chain, map, max, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
@@ -39,8 +39,8 @@ class PrOpenedCommand {
     console.log('Membros de qualidade:', QUALITY_TEAM.join(', '))
     const now = new Date()
     const from = format(now, 'yyyy-MM-dd')
-    const fiveYearsAgo = now.setFullYear(now.getFullYear() - 5)
-    const to = format(fiveYearsAgo, 'yyyy-MM-dd')
+    const tenYearsAgo = now.setFullYear(now.getFullYear() - 10)
+    const to = format(tenYearsAgo, 'yyyy-MM-dd')
     console.log(`Buscando pull requests abertos do time ${team} de ${from} até ${to}...`)
 
     const pulls = await githubFacade.listPullRequestsV2({
@@ -171,6 +171,27 @@ class PrOpenedCommand {
         }
       })))
     }
+
+    const memberStats = chain(pulls)
+      .groupBy((pull) => pull.author?.login)
+      .map((memberPulls, author) => ({
+        author,
+        count: memberPulls.length,
+        oldestAge: max(map(memberPulls, 'age')) || 0
+      }))
+      .sortBy('count')
+      .reverse()
+      .value()
+
+    console.log('')
+    console.log('PRs abertos por membro')
+    console.log(chalkTable({
+      columns: [
+        { field: 'author', name: chalk.cyan('Membro') },
+        { field: 'count', name: chalk.cyan('PRs abertos') },
+        { field: 'oldestAge', name: chalk.cyan('Idade do mais velho (dias)') }
+      ]
+    }, memberStats))
 
     console.log('')
     console.log('Quantidade de prs abertos: ', pulls.length.toFixed(0))

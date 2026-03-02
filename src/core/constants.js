@@ -3,17 +3,13 @@ import { uniq } from 'lodash-es'
 const TEMP_PROJECT_TEAM_MEMBERS = [
 ]
 const GRID_PROJECT_TEAM_MEMBERS = [
-  'LeoFalco',
-  'lfreneda',
-  'leandroaugusto470',
-  'lilian-caballero',
-  'DeividTheodoroLima',
-  'Carlos-F-Braga',
-  'rafagfran',
-  'eduamorimm',
-  'PedroH-araujo',
-  'tauk7',
-  'MarianaLebrao'
+  'LeoFalco', // Leo
+  'leandroaugusto470', // Leandro Augusto
+  'lilian-caballero', // Lilian
+  'rafagfran', // Rafael
+  'eduamorimm', // Eduardo
+  'tauk7', // Matheus
+  'MarianaLebrao' // Mariana
 ]
 
 const GRID_MAINTENANCE_TEAM_MEMBERS = [
