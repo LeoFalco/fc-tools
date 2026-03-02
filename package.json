@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/LeoFalco/fc-tools#readme",
   "devDependencies": {
-    "eslint": "9.39.2",
+    "eslint": "10.0.2",
     "neostandard": "0.12.2"
   },
   "dependencies": {
