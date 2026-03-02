@@ -214,6 +214,17 @@ const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
 
 async function sendToGoogleChat (pulls, memberStats, team) {
   const today = format(new Date(), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
+
+  if (pulls.length === 0) {
+    const text = `*PRs abertos - ${team} - ${today}*\n\nNenhum PR aberto no momento. Tudo limpo!`
+    await axios.post(GOOGLE_CHAT_WEBHOOK_URL, { text }, {
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+    })
+    console.log('')
+    console.log('Mensagem enviada para o Google Chat!')
+    return
+  }
+
   const lines = [`*PRs abertos - ${team} - ${today}*`]
 
   const grouped = chain(pulls)
