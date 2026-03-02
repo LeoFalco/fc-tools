@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   notify:
+    environment:
+      name: master
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
