@@ -1,0 +1,32 @@
+name: PRs abertos - Google Chat
+
+on:
+  schedule:
+    # 11:00 UTC = 08:00 horário de Brasília (UTC-3), segunda a sexta
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up node
+        uses: actions/setup-node@v6
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Send to Google Chat
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: node src/index.js opened --team GRID --chat

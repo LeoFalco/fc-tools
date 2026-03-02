@@ -31,6 +31,9 @@ const GET_PULL_REQUESTS = `#graphql
                 }
                 author {
                   login
+                  ... on User {
+                    name
+                  }
                 }
                 labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
                   nodes {

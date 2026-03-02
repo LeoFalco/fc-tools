@@ -1,8 +1,10 @@
 // @ts-check
 
+import axios from 'axios'
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { chain, map, max, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
@@ -22,6 +24,7 @@ class PrOpenedCommand {
       .command('opened')
       .description('list open pull requests')
       .option('-t, --team [team]', 'team to list pull requests')
+      .option('--chat', 'send output to google chat webhook')
       .action(this.action.bind(this))
   }
 
@@ -200,7 +203,64 @@ class PrOpenedCommand {
         values: toRows(pulls)
       }
     })
+
+    if (options.chat) {
+      await sendToGoogleChat(pullsSortedByAuthorAndAge, memberStats, team)
+    }
   }
+}
+
+const GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/AAQA_Lzin3I/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=pm8mDa8psYnX0bhz245pfq5KX0v5wuJbx8CqVojt1mU'
+
+async function sendToGoogleChat (pulls, memberStats, team) {
+  const today = format(new Date(), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
+  const lines = [`*PRs abertos - ${team} - ${today}*`]
+
+  const grouped = chain(pulls)
+    .groupBy((pull) => pull.author?.login)
+    .value()
+
+  for (const [author, authorPulls] of Object.entries(grouped)) {
+    lines.push('')
+    const authorName = authorPulls[0].author?.name
+    lines.push(authorName ? `*${authorName}* (${author})` : `*${author}*`)
+    for (const pull of authorPulls) {
+      const cleanTitle = pull.title.replace(/<>/g, '-').replace(/\p{Emoji_Presentation}/gu, '').replace(/\s+/g, ' ').trim()
+      const safeTitle = cleanTitle.length > 75 ? cleanTitle.substring(0, 75) + '...' : cleanTitle
+      lines.push(`- <${pull.url}|${safeTitle}> (${pull.age}d)`)
+    }
+  }
+
+  lines.push('')
+  lines.push('')
+  lines.push('*PRs por membro*')
+  lines.push('```')
+  const maxAuthorLen = Math.max(...memberStats.map((m) => m.author.length), 'Membro'.length)
+  lines.push(`${'Membro'.padEnd(maxAuthorLen)} | PRs | Mais velho`)
+  lines.push(`${'-'.repeat(maxAuthorLen)}-+-----+-----------`)
+  for (const member of memberStats) {
+    lines.push(`${member.author.padEnd(maxAuthorLen)} | ${String(member.count).padStart(3)} | ${member.oldestAge}d`)
+  }
+  lines.push('```')
+
+  const totalPrs = pulls.length
+  const avgAge = totalPrs > 0 ? mean(map(pulls, (pull) => pull.age)).toFixed(0) : 0
+  lines.push('')
+  lines.push('```')
+  lines.push(`Total: ${totalPrs} PRs`)
+  lines.push(`Idade média: ${avgAge} dias`)
+  lines.push('```')
+  lines.push('')
+  lines.push('<users/all>')
+
+  const text = lines.join('\n')
+
+  await axios.post(GOOGLE_CHAT_WEBHOOK_URL, { text }, {
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+  })
+
+  console.log('')
+  console.log('Mensagem enviada para o Google Chat!')
 }
 
 function toRows (pulls) {
