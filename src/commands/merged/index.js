@@ -227,8 +227,9 @@ async function sendToGoogleChat (pulls, team, from, to) {
     lines.push(authorName ? `*${authorName}* (${author})` : `*${author}*`)
     for (const pull of authorPulls) {
       const cleanTitle = pull.title.replace(/<>/g, '-').replace(/\p{Emoji_Presentation}/gu, '').replace(/\s+/g, ' ').trim()
-      const safeTitle = cleanTitle.length > 75 ? cleanTitle.substring(0, 75) + '...' : cleanTitle
-      lines.push(`- <${pull.url}|${safeTitle}> (${pull.mergedAt})`)
+      const safeTitle = cleanTitle.length > 70 ? cleanTitle.substring(0, 70) + '...' : cleanTitle
+      const timeOnly = pull.mergedAt?.split(' ')[1] || pull.mergedAt
+      lines.push(`- <${pull.url}|${safeTitle}> (${timeOnly})`)
     }
   }
 
