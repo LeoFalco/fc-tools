@@ -193,7 +193,7 @@ async function startPublishPooling (pulls) {
 const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
 
 function formatDate (dateStr) {
-  return format(parseISO(dateStr), 'dd/MM/yyyy', { locale: ptBR })
+  return format(parseISO(dateStr), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
 }
 
 async function sendToGoogleChat (pulls, team, from, to) {
