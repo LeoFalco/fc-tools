@@ -42,6 +42,12 @@ export function isNotWait (pull) {
   return !pull.labels.nodes.some((label) => label.name.toLowerCase().includes('wait'))
 }
 
+export function isChecksInProgress (pull) {
+  return pull.checks
+    .filter((check) => check.name !== 'PR Pattern')
+    .some((check) => !check.conclusion || ['in_progress', 'queued', 'pending'].includes(check.conclusion))
+}
+
 export function isChecksPassed (pull) {
   const checksByName = pull.checks
     .filter((check) => check.name !== 'PR Pattern')
