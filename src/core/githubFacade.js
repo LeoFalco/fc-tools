@@ -244,7 +244,7 @@ class GithubFacade {
 
     if (compare == null) return true
 
-    return compare.data.ahead_by > 0
+    return compare.data.ahead_by >= 0
   }
 
   async rebasePullRequest ({ owner, repo, number }) {
