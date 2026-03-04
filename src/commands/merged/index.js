@@ -115,7 +115,8 @@ class PrMergedCommand {
     await startPublishPooling(pulls)
 
     if (options.chat) {
-      await sendToGoogleChat(pulls, team, from, to)
+      const jobUrls = await fetchMasterJobUrls(pulls)
+      await sendToGoogleChat(pulls, team, from, to, jobUrls)
     }
   }
 }
@@ -190,13 +191,30 @@ async function startPublishPooling (pulls) {
   }
 }
 
+async function fetchMasterJobUrls (pulls) {
+  const uniqueRepos = chain(pulls)
+    .uniqBy(pull => pull.repository.name)
+    .value()
+    .sort((a, b) => a.repository.name.localeCompare(b.repository.name))
+
+  const jobUrls = {}
+  for (const pull of uniqueRepos) {
+    const { owner, repo } = pull.url.match(/https:\/\/github\.com\/(?<owner>.+?)\/(?<repo>.+?)\//)?.groups || {}
+    const job = await githubFacade.listWorkflowJobs({ owner, repo })
+    if (job?.html_url) {
+      jobUrls[repo] = job.html_url
+    }
+  }
+  return jobUrls
+}
+
 const GOOGLE_CHAT_WEBHOOK_URL = process.env.GOOGLE_CHAT_WEBHOOK_URL
 
 function formatDate (dateStr) {
   return format(parseISO(dateStr), 'dd/MM/yyyy (EEEE)', { locale: ptBR })
 }
 
-async function sendToGoogleChat (pulls, team, from, to) {
+async function sendToGoogleChat (pulls, team, from, to, jobUrls = {}) {
   const formattedFrom = formatDate(from)
   const formattedTo = formatDate(to)
   const period = formattedFrom === formattedTo
@@ -259,6 +277,15 @@ async function sendToGoogleChat (pulls, team, from, to) {
   lines.push('```')
   lines.push(`Total: ${pulls.length} PRs publicados`)
   lines.push('```')
+  const jobEntries = Object.entries(jobUrls)
+  if (jobEntries.length > 0) {
+    lines.push('')
+    lines.push('*Jobs da master*')
+    for (const [repo, url] of jobEntries) {
+      lines.push(`- <${url}|${repo}>`)
+    }
+  }
+
   lines.push('')
   lines.push('<users/all>')
 
