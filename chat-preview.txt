@@ -1,0 +1,84 @@
+*PRs abertos - GRID - 04/03/2026 (quarta-feira)*
+
+*Leo Falco* (LeoFalco)
+- <https://github.com/FieldControl/mountdoom-2/pull/408|Gestão de fornecedores - Melhoria - Update palantir 5.80.3> (5d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/orodruin-2/pull/2912|Bradesco AOC - Refatoração - remove deasync do módulo server> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/udun-2/pull/1165|Bradesco AOC - Melhoria - Pipeline de DB reset autossuficiente com see...> (1d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/sammathnaur/pull/4187|Gestão de fornecedores - Script - reprocessamento de manutenções conta...> (1d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*Eduardo Amorim* (eduamorimm)
+- <https://github.com/FieldControl/mountdoom-2/pull/404|Gestão de fornecedores - Melhoria - Nps para toda a base> (6d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/eyeofsauron-2/pull/1250|API principal - Implementação - Jornada do cliente> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom/pull/2625|Gestão de fornecedores - Implementação - Nova tela de login> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom/pull/2626|Gestão de fornecedores - Melhoria - Remove a toolbar no novo sidemenu> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom-2/pull/411|Gestão de fornecedores - Melhoria - Remove a toolbar no novo sidemenu> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/sammathnaur/pull/4184|Gestão de fornecedores - Implementação - Jornada do cliente> (1d)
+  🔴 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*Leandro Augusto* (leandroaugusto470)
+- <https://github.com/FieldControl/sammathnaur/pull/4167|Gestão de fornecedores - Implementação - Pendências internas> (7d)
+  🔴 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom-2/pull/403|Gestão de fornecedores - Implementação - Pendências internas> (6d)
+  🔴 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mordu/pull/167|Gestão de fornecedores - Implementação - Pendências internas> (5d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*Lílian Caballero* (lilian-caballero)
+- <https://github.com/FieldControl/sting-2/pull/2742|BackOffice - Implementação - Validação e formatação de CNPJ alfanuméri...> (6d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/sammathnaur/pull/4178|Gestão de fornecedores - Correção - Sincronização equipamentos PRÁTICA> (5d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom/pull/2623|Gestão de fornecedores - Implementação - Volume de solicitações na mod...> (4d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/eyeofsauron-2/pull/1255|API principal - Correção - Correção de testes> (1d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*Rafael Gonçalves* (rafagfran)
+- <https://github.com/FieldControl/amonamarth/pull/254|API Pública Enterprise - Correção - Limite de datas de abertura para c...> (98d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom-2/pull/333|Gestão de fornecedores - Correção - Remoção da flag de estoque> (95d)
+  🔴 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/sammathnaur/pull/4186|Gestão de fornecedores - Correção - Informar se o tipo de serviço tem ...> (1d)
+  🟢 Conflitos | 🟢 CI | 🟢 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mordor/pull/5658|Painel do gestor - Correção - Valores customizados em produtos e servi...> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom/pull/2630|Gestão de fornecedores - Correção - Remove flag storage> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mountdoom-2/pull/412|Gestão de fornecedores - Correção - Remove flag storage> (1d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*Mathues Henrique* (tauk7)
+- <https://github.com/FieldControl/sammathnaur/pull/4101|fix(functions): calculate-service-round> (53d)
+  🟢 Conflitos | 🔴 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/eyeofsauron-2/pull/1197|API principal - Implementação - Calcular Serviços Customizados> (35d)
+  🟢 Conflitos | 🟢 CI | 🔴 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+- <https://github.com/FieldControl/mordor-2/pull/1335|Painel do gestor - Correção - Aba de Produtos e Serviços em Solicitaçõ...> (6d)
+  🟢 Conflitos | 🟢 CI | 🟢 Aprovado | 🟢  Mudanças Solicitadas | 🔴 Qualidade
+
+*PRs por membro*
+```
+Membro            | PRs | Mais velho
+------------------+-----+-----------
+eduamorimm        |   6 | 6d
+rafagfran         |   6 | 98d
+LeoFalco          |   4 | 5d
+lilian-caballero  |   4 | 6d
+leandroaugusto470 |   3 | 7d
+tauk7             |   3 | 53d
+```
+
+```
+Total: 26 PRs
+Idade média: 13 dias
+```
+
+<users/all>

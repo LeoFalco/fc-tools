@@ -9,7 +9,7 @@ import { chain, map, max, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
-import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
+import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isChecksInProgress, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../../utils/utils.js'
 import { promptTeam } from '../../utils/prompt.js'
 
 class PrOpenedCommand {
@@ -61,6 +61,7 @@ class PrOpenedCommand {
           const notRejected = !isRejected(pull)
           const mergeable = isMergeable(pull)
           const checks = isChecksPassed(pull)
+          const checksInProgress = isChecksInProgress(pull)
           const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
           const ready = isReady(pull)
           const age = calcAge(pull)
@@ -70,6 +71,7 @@ class PrOpenedCommand {
           pull.notRejected = notRejected
           pull.mergeable = mergeable
           pull.checks = checks
+          pull.checksInProgress = checksInProgress
           pull.ready = ready
           pull.quality = quality
           pull.age = age
@@ -237,12 +239,19 @@ async function sendToGoogleChat (pulls, memberStats, team) {
     lines.push(authorName ? `*${authorName}* (${author})` : `*${author}*`)
     for (const pull of authorPulls) {
       const cleanTitle = pull.title.replace(/<>/g, '-').replace(/\p{Emoji_Presentation}/gu, '').replace(/\s+/g, ' ').trim()
-      const safeTitle = cleanTitle.length > 75 ? cleanTitle.substring(0, 75) + '...' : cleanTitle
+      const safeTitle = cleanTitle.length > 70 ? cleanTitle.substring(0, 70) + '...' : cleanTitle
+      const status = [
+        `${pull.mergeable ? '🟢' : '🔴'} Conflitos`,
+        `${pull.checks ? '🟢' : pull.checksInProgress ? '🟡' : '🔴'} CI`,
+        `${pull.approved ? '🟢' : '🔴'} Aprovado`,
+        `${pull.notRejected ? '🟢' : '🔴'} Mudanças Solicitadas`,
+        `${pull.quality ? '🟢' : '🔴'} Qualidade`
+      ].join(' | ')
       lines.push(`- <${pull.url}|${safeTitle}> (${pull.age}d)`)
+      lines.push(`  ${status}`)
     }
   }
 
-  lines.push('')
   lines.push('')
   lines.push('*PRs por membro*')
   lines.push('```')
