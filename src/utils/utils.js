@@ -74,6 +74,11 @@ export const coloredBoolean = (param) => {
   return value ? chalk.green('✅ ' + key) : chalk.red('❌ ' + key)
 }
 
+export const coloredPending = (param) => {
+  const [key, value] = Object.entries(param)[0]
+  return value ? chalk.yellow('⏳ ' + key) : null
+}
+
 export const calcAge = (pull) => {
   return Math.max(differenceInDays(Date.now(), parseISO(pull.createdAt)), 1)
 }

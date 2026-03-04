@@ -1,16 +1,15 @@
 // @ts-check
 
-import { uniqBy } from 'lodash-es'
 import { QUALITY_TEAM } from '../../core/constants.js'
 import { $ } from '../../core/exec.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
-import { coloredBoolean, hasPublishLabel, isApproved, isChecksPassed, isMergeable, isQualityOk, isReady, isRejected, padEnd } from '../../utils/utils.js'
+import { coloredBoolean, coloredPending, hasPublishLabel, isApproved, isChecksPassed, isChecksInProgress, isMergeable, isQualityOk, isReady, isRejected, padEnd } from '../../utils/utils.js'
 import chalk from 'chalk'
 import { promptConfirm } from '../../utils/prompt.js'
 import { sleep } from '../../utils/sleep.js'
 import ora from 'ora'
-const { red, yellow, green, gray, blue } = chalk
+const { red, yellow, green, gray, blue, dim, bold } = chalk
 
 class PrMergeCommand {
   /**
@@ -43,10 +42,10 @@ class PrMergeCommand {
    * @param {boolean} options.refresh
    */
   async action (options) {
-    console.log(blue('Starting PR merge process...'))
     if (options.flux) {
       await this.actionWithFlux(options)
     } else {
+      console.log(blue('Starting PR merge process...'))
       await this.actionWithoutFlux(options)
     }
   }
@@ -60,7 +59,7 @@ class PrMergeCommand {
    * @param {boolean} options.refresh
    */
   async actionWithFlux (options) {
-    console.log(blue('Using flux find pull requests'))
+    console.log(blue('Fetching cards from Flux PUBLISH stage...'))
 
     const cards = await fluxClient.getUnopenedCards({
       stageId: STAGES.PUBLISH,
@@ -73,11 +72,13 @@ class PrMergeCommand {
       return
     }
 
-    for (const card of cards) {
-      await extractPrData(card)
+    for (let i = 0; i < cards.length; i++) {
+      await extractPrData(cards[i], i + 1, cards.length)
     }
 
-    console.log(blue(`Found ${cards.length} cards. Do you want to merge them?`))
+    const totalPrs = cards.reduce((sum, card) => sum + card.pullRequests.length, 0)
+    console.log()
+    console.log(blue(`Found ${bold(cards.length)} cards with ${bold(totalPrs)} pull requests`))
 
     const confirmed = await Promise.race([
       promptConfirm(options),
@@ -85,25 +86,38 @@ class PrMergeCommand {
     ])
 
     if (confirmed) {
-      for (const card of cards) {
-        await mergeCardPrs(card, options)
-        await moveCardToMergedStage(card)
+      console.log()
+      console.log(bold('Starting merge process...'))
+
+      const summary = { merged: 0, skipped: 0, failed: 0, cardsMoved: 0 }
+
+      for (let i = 0; i < cards.length; i++) {
+        const result = await mergeCardPrs(cards[i], options, i + 1, cards.length)
+        summary.merged += result.merged
+        summary.skipped += result.skipped
+        summary.failed += result.failed
+        const moved = await moveCardToMergedStage(cards[i])
+        if (moved) summary.cardsMoved++
       }
 
-      console.log(green('All done!'))
-      console.log('You can check the cards at https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table')
-      console.log('you can check the jobs with')
-      console.log('  field merged --from=today --to=today --team=GRID')
+      console.log()
+      console.log(dim('──────────────────────────────'))
+      console.log(green(bold('All done!')))
+      console.log()
+      console.log(bold('Summary:'))
+      console.log(`  Cards: ${cards.length} total, ${green(summary.cardsMoved + ' moved')}${summary.cardsMoved < cards.length ? ', ' + yellow((cards.length - summary.cardsMoved) + ' not moved') : ''}`)
+      console.log(`  PRs:   ${totalPrs} total, ${green(summary.merged + ' merged')}${summary.skipped ? ', ' + yellow(summary.skipped + ' skipped') : ''}${summary.failed ? ', ' + red(summary.failed + ' failed') : ''}`)
+      console.log()
+      console.log(dim('Links:'))
+      console.log(`  ${dim('flux:')} https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table`)
+      console.log(`  ${dim('jobs:')} field merged --from=today --to=today --team=GRID`)
 
       const everyCardMoved = cards.every(card => card.moved === true)
       if (everyCardMoved) {
-        console.log(green('All cards were moved to merged stage'))
         process.exit(0)
-      } else {
-        console.log(yellow('Some cards were not moved to merged stage'))
       }
     } else {
-      console.log('Merge operation not confirmed')
+      console.log(yellow('Merge operation not confirmed'))
     }
 
     if (options.refresh) {
@@ -112,7 +126,7 @@ class PrMergeCommand {
       if (options.confirm) {
         await sleep(1000)
       }
-      this.actionWithFlux(options)
+      return this.actionWithFlux(options)
     }
   }
 
@@ -133,9 +147,7 @@ class PrMergeCommand {
 
     console.log(blue(`Pull request ${prUrl}`))
 
-    const remoteInfo = await $('git remote show origin')
-    // @ts-ignore
-    const defaultBranch = remoteInfo?.match(/HEAD branch: (.*)/)?.[1] || 'master'
+    const defaultBranch = await $('gh repo view --json defaultBranchRef --jq .defaultBranchRef.name', { loading: false, disableLog: true })
     const currentBranch = await $('git branch --show-current')
 
     console.log(blue(`Ready to merge branch ${currentBranch} into ${defaultBranch}`))
@@ -273,7 +285,7 @@ async function merge ({ admin }) {
 const githubPrUrlRegex = /https:\/\/github\.com\/(?<owner>[^/]+)\/(?<repo>[^/]+)\/pull\/(?<number>\d+)/gmi
 
 // @ts-ignore
-async function extractPrData (card) {
+async function extractPrData (card, cardIndex, cardTotal) {
   card.name = card.name.trim()
   card.pullRequests = []
 
@@ -281,8 +293,8 @@ async function extractPrData (card) {
     // @ts-ignore
     .then(fields => fields.filter(field => field.title && field.value))
 
-  console.log('---------------------------------')
-  console.log(blue('Card:', card.name))
+  console.log()
+  console.log(dim(`─── Card ${cardIndex}/${cardTotal}: `) + bold(card.name) + dim(' ───'))
 
   const description = String(card.description || '')
     .concat('\n\n')
@@ -299,9 +311,9 @@ async function extractPrData (card) {
     })
   }
 
-  card.pullRequests = uniqBy(card.pullRequests, 'url')
+  card.pullRequests = [...new Map(card.pullRequests.map(pr => [pr.url, pr])).values()]
 
-  for (const pr of card.pullRequests) {
+  await Promise.all(card.pullRequests.map(async (pr) => {
     const pull = await githubFacade.getPullRequest({
       organization: pr.owner,
       repo: pr.repo,
@@ -312,6 +324,7 @@ async function extractPrData (card) {
     const notRejected = !isRejected(pull)
     const mergeable = isMergeable(pull)
     const checks = isChecksPassed(pull)
+    const checksInProgress = !checks && isChecksInProgress(pull)
     const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
     const ready = isReady(pull)
     const publish = approved && notRejected && mergeable && checks && quality && ready
@@ -323,33 +336,43 @@ async function extractPrData (card) {
     })
 
     Object.assign(pr, {
+      $pull: pull,
       $metadata: {
         approved,
         notRejected,
         mergeable,
         checks,
+        checksInProgress,
         quality,
         ready,
         ahead,
         publish
       }
     })
-  }
+  }))
 
   if (card.pullRequests.length === 0) {
-    console.log(yellow('  - No pull requests found in description.'))
+    console.log(yellow('  No pull requests found in description'))
   }
 
-  card.pullRequests.forEach((/** @type {{ $metadata: ArrayLike<any> | { [s: string]: any; }; url: any; }} */ pull) => {
+  card.pullRequests.forEach((/** @type {{ $metadata: ArrayLike<any> | { [s: string]: any; }; url: any; }} */ pull, /** @type {number} */ prIndex) => {
     /**
      * @type {string[]}
      */
     const notes = []
     Object.entries(pull.$metadata).forEach(([key, value]) => {
-      notes.push(coloredBoolean({ [key]: value }))
+      if (key === 'checksInProgress') {
+        if (value) {
+          notes.push(coloredPending({ checks: value }))
+        }
+      } else if (key === 'checks' && pull.$metadata.checksInProgress) {
+        // skip — shown as pending instead
+      } else {
+        notes.push(coloredBoolean({ [key]: value }))
+      }
     })
-    console.log(blue(`  - ${pull.url}`))
-    console.log(blue(`    ${notes.join(' ')}`))
+    console.log(`  ${dim(`PR ${prIndex + 1}/${card.pullRequests.length}:`)} ${blue(pull.url)}`)
+    console.log(`    ${notes.join(' ')}`)
   })
 
   return card
@@ -358,34 +381,45 @@ async function extractPrData (card) {
 /**
  * @param {{ name: any; pullRequests: string | any[]; id: any; }} card
  * @param {{ flux?: boolean; confirm?: boolean; continue: any; refresh?: boolean; }} options
+ * @param {number} cardIndex
+ * @param {number} cardTotal
+ * @returns {Promise<{ merged: number; skipped: number; failed: number }>}
  */
-async function mergeCardPrs (card, options) {
-  console.log('----------------------------------')
-  console.log('Card:', card.name)
-  console.log('Merging card pull requests')
+async function mergeCardPrs (card, options, cardIndex, cardTotal) {
+  const counters = { merged: 0, skipped: 0, failed: 0 }
+
+  console.log()
+  console.log(dim(`─── Merging Card ${cardIndex}/${cardTotal}: `) + bold(card.name) + dim(' ───'))
 
   if (card.pullRequests.length === 0) {
     console.log(yellow('  No pull requests found'))
+    return counters
   }
-  for (const pullRequest of card.pullRequests) {
-    console.log(blue(`  - ${pullRequest.url}`))
+
+  for (let i = 0; i < card.pullRequests.length; i++) {
+    const pullRequest = card.pullRequests[i]
+    console.log(`  ${dim(`PR ${i + 1}/${card.pullRequests.length}:`)} ${blue(pullRequest.url)}`)
+
     await githubFacade.rebasePullRequest({
       owner: pullRequest.owner,
       repo: pullRequest.repo,
       number: pullRequest.number
+    }).then(() => {
+      console.log(dim('    Rebase ok'))
     }).catch(() => {
-      console.log(yellow('    [ignored] Rebase failed'))
+      console.log(gray('    Rebase failed (ignored)'))
     })
 
     if (!pullRequest.$metadata.publish) {
-      console.log(yellow('    Skipped merge publish conditions not met'))
+      console.log(yellow('    Skipped — publish conditions not met'))
+      counters.skipped++
       continue
     }
 
     const reject = !options.continue
     // @ts-ignore
     const { state } = await $(`gh pr view ${pullRequest.url} --json state`, { stdio: 'pipe', loading: false, json: true })
-    console.log(blue(`    State is ${state}`))
+    console.log(`    State: ${state === 'OPEN' ? blue(state) : state === 'MERGED' ? green(state) : yellow(state)}`)
 
     const isOpen = state.includes('OPEN')
     if (isOpen) {
@@ -394,9 +428,13 @@ async function mergeCardPrs (card, options) {
       // @ts-ignore
       if (!result.success) {
         // @ts-ignore
-        console.log(red('    ' + result.stderr?.trim()))
+        console.log(red('    Merge failed: ' + result.stderr?.trim()))
+        counters.failed++
         continue
       }
+
+      console.log(green('    Merged'))
+      counters.merged++
 
       const job = await githubFacade.listWorkflowJobs({
         owner: pullRequest.owner,
@@ -407,6 +445,10 @@ async function mergeCardPrs (card, options) {
         cardId: card.id,
         content: `Pull request ${pullRequest.url} merged successfully. ${job?.html_url}`
       })
+    } else if (state === 'MERGED') {
+      counters.merged++
+    } else {
+      counters.skipped++
     }
 
     const comments = await githubFacade.getPullRequestComments({
@@ -420,9 +462,11 @@ async function mergeCardPrs (card, options) {
 
     if (!hasFluxCardComment) {
       await $(`gh pr comment ${pullRequest.url} --body Flux:\\ https://app.fluxcontrol.com.br/#/fluxo/b23ec9c8-8aeb-471a-8b2f-cd1af4f5e73e?view_mode=table&panel=card-detail&cardId=${card.id}`, { reject, stdio: 'ignore', loading: false })
-      console.log(green('Added Flux comment to pull request'))
+      console.log(green('    Added Flux comment'))
     }
   }
+
+  return counters
 }
 
 /**
@@ -437,21 +481,28 @@ async function mergeCardPrs (card, options) {
  * @returns {Promise<boolean>} - returns true if the card was moved, false otherwise
  */
 async function moveCardToMergedStage (card) {
-  console.log('Moving card to published stage')
+  console.log(dim('  Moving card to MERGED stage...'))
 
-  const allPullRequests = await Promise.all(card.pullRequests.map(pr => githubFacade.getPullRequest({
-    organization: pr.owner,
-    repo: pr.repo,
-    number: pr.number
-  })))
+  const allPullRequests = await Promise.all(card.pullRequests.map(async (pr) => {
+    if (pr.$pull) return pr.$pull
+    return githubFacade.getPullRequest({
+      organization: pr.owner,
+      repo: pr.repo,
+      number: pr.number
+    })
+  }))
 
-  const states = allPullRequests.map(pr => pr.state)
-  console.log(`  States are ${states.join(' ')}`)
+  const coloredStates = allPullRequests.map(pr => {
+    if (pr.state === 'MERGED') return green(pr.state)
+    if (pr.state === 'CLOSED') return yellow(pr.state)
+    return red(pr.state)
+  })
+  console.log(`  States: ${coloredStates.join(' ')}`)
 
   const everyPullRequestIsMergedOrClosed = allPullRequests.every(pr => pr.state === 'MERGED' || pr.state === 'CLOSED')
 
   if (!everyPullRequestIsMergedOrClosed) {
-    console.log(red('  Skipped stage change'))
+    console.log(red('  Skipped stage change — not all PRs merged/closed'))
     return false
   }
 
@@ -462,7 +513,7 @@ async function moveCardToMergedStage (card) {
     nextCardId: null
   })
 
-  console.log(green('  Card moved'))
+  console.log(green('  Card moved to MERGED'))
 
   Object.assign(card, {
     moved: true
@@ -485,21 +536,19 @@ async function waitForMergeCompletion ({ currentBranch }) {
   while (retries < maxRetries) {
     await sleep(1000)
 
-    const state = await $('gh pr view ' + currentBranch + ' --json state --jq .state', { loading: false, disableLog: true })
+    const prData = await $(`gh pr view ${currentBranch} --json state,statusCheckRollup`, { loading: false, disableLog: true, json: true })
 
-    const statusCheckRollup = await $('gh pr view ' + currentBranch + ' --json statusCheckRollup --jq .statusCheckRollup', { loading: false, disableLog: true, json: true })
-      .then((result) => {
-        // @ts-ignore
-        return result.map((item) => {
-          return {
-            name: item.name,
-            status: item.status.toLowerCase(),
-            conclusion: item.conclusion.toLowerCase(),
-            detailsUrl: item.detailsUrl
-          }
-          // @ts-ignore
-        }).sort((a, b) => a.name.localeCompare(b.name))
-      })
+    // @ts-ignore
+    const state = prData.state
+    // @ts-ignore
+    const statusCheckRollup = (prData.statusCheckRollup || [])
+      .map((item) => ({
+        name: item.name,
+        status: item.status.toLowerCase(),
+        conclusion: item.conclusion.toLowerCase(),
+        detailsUrl: item.detailsUrl
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
 
     // @ts-ignore
     const statusMaxWidth = Math.max(...statusCheckRollup.map((item) => item.status.length))
@@ -574,7 +623,6 @@ async function approve ({ currentBranch }) {
   const hasMyReview = await $('gh pr view ' + currentBranch + ' --json reviews', { json: true })
     // @ts-ignore
     .then(result => {
-      console.log(result)
       return result?.reviews.some(review => review.author.login === 'LeoFalco' && review.state === 'APPROVED')
     })
 
