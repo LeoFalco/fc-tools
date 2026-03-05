@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '../../../auth.js'
 import { fetchMergedPRs } from '../../../../src/modules/merged-data.js'
-
-export const revalidate = 60
+import { get, set } from '../../../lib/cache.js'
 
 export async function GET (request) {
   const session = await auth()
@@ -15,12 +14,15 @@ export async function GET (request) {
   const today = new Date().toISOString().split('T')[0]
   const from = searchParams.get('from') || today
   const to = searchParams.get('to') || today
+  const key = `merged:${team}:${from}:${to}`
+
+  const cached = get(key)
+  if (cached) return NextResponse.json(cached)
 
   try {
     const data = await fetchMergedPRs(team, from, to)
-    return NextResponse.json(data, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate' }
-    })
+    set(key, data)
+    return NextResponse.json(data)
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

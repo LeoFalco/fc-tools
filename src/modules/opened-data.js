@@ -1,7 +1,6 @@
 // @ts-check
 
 import { format } from 'date-fns'
-import { chain, map, max, mean, sum } from 'lodash-es'
 import { QUALITY_TEAM, TEAMS } from '../core/constants.js'
 import { githubFacade } from '../core/githubFacade.js'
 import { calcAge, hasPublishLabel, isApproved, isChecksPassed, isChecksInProgress, isMergeable, isNotFreelance, isNotWait, isQualityOk, isReady, isRejected } from '../utils/utils.js'
@@ -22,7 +21,7 @@ export async function fetchOpenedPRs (team) {
     from,
     to
   }).then((pulls) => {
-    return chain(pulls)
+    return pulls
       .filter(isNotFreelance)
       .filter(isNotWait)
       .map((pull) => {
@@ -35,7 +34,7 @@ export async function fetchOpenedPRs (team) {
         const ready = isReady(pull)
         const age = calcAge(pull)
 
-        pull.score = sum([approved, mergeable, checks, quality, ready].map((param) => (param ? 1 : 0)))
+        pull.score = [approved, mergeable, checks, quality, ready].filter(Boolean).length
         pull.approved = approved
         pull.notRejected = notRejected
         pull.mergeable = mergeable
@@ -51,24 +50,21 @@ export async function fetchOpenedPRs (team) {
         pull.missingReviewers = missingReviewers
         return pull
       })
-      .sortBy((pull) => pull.score)
-      .reverse()
-      .value()
+      .sort((a, b) => b.score - a.score)
   })
 
-  const memberStats = chain(pulls)
-    .groupBy((pull) => pull.author?.login)
-    .map((memberPulls, author) => ({
+  const grouped = Object.groupBy(pulls, (pull) => pull.author?.login ?? 'unknown')
+  const memberStats = Object.entries(grouped)
+    .map(([author, memberPulls]) => ({
       author,
       count: memberPulls.length,
-      oldestAge: max(map(memberPulls, 'age')) || 0
+      oldestAge: Math.max(...memberPulls.map((p) => p.age ?? 0))
     }))
-    .sortBy('count')
-    .reverse()
-    .value()
+    .sort((a, b) => b.count - a.count)
 
   const totalPrs = pulls.length
-  const avgAge = totalPrs > 0 ? Number(mean(map(pulls, (pull) => pull.age)).toFixed(0)) : 0
+  const ages = pulls.map((p) => p.age ?? 0)
+  const avgAge = totalPrs > 0 ? Math.round(ages.reduce((a, b) => a + b, 0) / totalPrs) : 0
 
   return { pulls, memberStats, totalPrs, avgAge }
 }

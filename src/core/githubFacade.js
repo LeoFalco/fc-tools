@@ -152,34 +152,36 @@ class GithubFacade {
       }
     `
 
-    const pulls = []
     const state = params.state.toLowerCase()
 
-    for (const assignee of params.assignees) {
-      try {
-        const searchQuery = state === 'merged'
-          ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc author:${assignee}`
-          : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc author:${assignee}`
-        console.log(`Query [${assignee}]:`, searchQuery)
-        const data = await octokit.graphql(LIST_PRS_V2, {
-          searchQuery
-        })
+    const results = await Promise.all(
+      params.assignees.map(async (assignee) => {
+        try {
+          const searchQuery = state === 'merged'
+            ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc author:${assignee}`
+            : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc author:${assignee}`
+          console.log(`Query [${assignee}]:`, searchQuery)
+          const data = await octokit.graphql(LIST_PRS_V2, {
+            searchQuery
+          })
 
-        console.log(`${assignee}: ${data.search.issueCount} pull requests encontrados`)
+          console.log(`${assignee}: ${data.search.issueCount} pull requests encontrados`)
 
-        for (const pr of data.search.nodes) {
-          pulls.push({
+          return data.search.nodes.map((pr) => ({
             number: pr.url.split('/').pop(),
             repo: pr.repository.name,
             url: pr.url,
             mergedAt: pr.mergedAt,
             author: pr.author?.login
-          })
+          }))
+        } catch (error) {
+          console.warn(red(`Erro ao buscar pull requests de ${assignee}: ${error.message}`))
+          return []
         }
-      } catch (error) {
-        console.warn(red(`Erro ao buscar pull requests de ${assignee}: ${error.message}`))
-      }
-    }
+      })
+    )
+
+    const pulls = results.flat()
 
     pulls.sort((a, b) => String(a.mergedAt).localeCompare(String(b.mergedAt)))
 
