@@ -2,7 +2,6 @@
 
 import { differenceInBusinessDays, format, parseISO } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
-import { chain } from 'lodash-es'
 import { TEAMS } from '../core/constants.js'
 import { githubFacade } from '../core/githubFacade.js'
 import { getTeamByAssignee } from '../utils/utils.js'
@@ -34,15 +33,13 @@ export async function fetchMergedPRs (team, from, to) {
     pull.team = getTeamByAssignee(pull.author?.login)
   }
 
-  const memberStats = chain(pulls)
-    .groupBy((pull) => pull.author?.login)
-    .map((memberPulls, author) => ({
+  const grouped = Object.groupBy(pulls, (pull) => pull.author?.login ?? 'unknown')
+  const memberStats = Object.entries(grouped)
+    .map(([author, memberPulls]) => ({
       author,
       count: memberPulls.length
     }))
-    .sortBy('count')
-    .reverse()
-    .value()
+    .sort((a, b) => b.count - a.count)
 
   return { pulls, memberStats }
 }
