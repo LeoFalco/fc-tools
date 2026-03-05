@@ -3,13 +3,12 @@
 import axios from 'axios'
 import chalk from 'chalk'
 import chalkTable from 'chalk-table'
-import { differenceInBusinessDays, format, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { toZonedTime } from 'date-fns-tz'
 import { chain } from 'lodash-es'
-import { TEAMS } from '../../core/constants.js'
 import { sheets } from '../../core/drive.js'
 import { githubFacade } from '../../core/githubFacade.js'
+import { fetchMergedPRs } from '../../modules/merged-data.js'
 import { promptFrom, promptTeam, promptTo } from '../../utils/prompt.js'
 import { sleep } from '../../utils/sleep.js'
 import { coloredConclusion, coloredStatus, getTeamByAssignee } from '../../utils/utils.js'
@@ -48,32 +47,7 @@ class PrMergedCommand {
 
     console.log('Analisando PRs do time', team, 'entre', from, 'e', to)
 
-    const assignees = TEAMS[team]
-
-    const pulls = await githubFacade.listPullRequestsV2({
-      assignees,
-      state: 'MERGED',
-      organization: 'FieldControl',
-      from,
-      to
-    }).then((pulls) => {
-      return pulls.filter((pull) => {
-        if (!pull.mergedAt) return false
-        const mergedDate = pull.mergedAt.split('T').shift()
-        return mergedDate && mergedDate >= from && mergedDate <= to
-      })
-    })
-
-    for (const pull of pulls) {
-      pull.title = pull.title.substring(0, 80) + (pull.title.length > 80 ? '...' : '')
-      pull.createdAt = pull.createdAt && format(toZonedTime(parseISO(pull.createdAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
-      pull.mergedAt = pull.mergedAt && format(toZonedTime(parseISO(pull.mergedAt), 'America/Sao_Paulo'), 'yyyy-MM-dd HH:mm')
-      pull.durationDays = pull.createdAt && pull.mergedAt
-        ? Math.max(differenceInBusinessDays(parseISO(pull.mergedAt), parseISO(pull.createdAt)), 1)
-        : null
-
-      pull.team = getTeamByAssignee(pull.author?.login)
-    }
+    const { pulls } = await fetchMergedPRs(team, from, to)
 
     console.log('')
     console.log('PRs publicados')
