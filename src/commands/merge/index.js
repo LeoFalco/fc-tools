@@ -1,10 +1,9 @@
 // @ts-check
 
-import { QUALITY_TEAM } from '../../core/constants.js'
 import { $ } from '../../core/exec.js'
 import { githubFacade } from '../../core/githubFacade.js'
 import { fluxClient, STAGES } from '../../services/flux/flux-client.js'
-import { coloredBoolean, coloredPending, hasPublishLabel, isApproved, isChecksPassed, isChecksInProgress, isMergeable, isQualityOk, isReady, isRejected, padEnd } from '../../utils/utils.js'
+import { coloredBoolean, coloredPending, isApproved, isChecksPassed, isChecksInProgress, isMergeable, isReady, isRejected, padEnd } from '../../utils/utils.js'
 import chalk from 'chalk'
 import { promptConfirm } from '../../utils/prompt.js'
 import { sleep } from '../../utils/sleep.js'
@@ -325,9 +324,8 @@ async function extractPrData (card, cardIndex, cardTotal) {
     const mergeable = isMergeable(pull)
     const checks = isChecksPassed(pull)
     const checksInProgress = !checks && isChecksInProgress(pull)
-    const quality = isQualityOk(pull, QUALITY_TEAM) || hasPublishLabel(pull)
     const ready = isReady(pull)
-    const publish = approved && notRejected && mergeable && checks && quality && ready
+    const publish = approved && notRejected && mergeable && checks && ready
     const ahead = await githubFacade.isAheadOfBase({
       baseRef: pull.baseRefName,
       headRef: pull.headRefName,
@@ -343,7 +341,6 @@ async function extractPrData (card, cardIndex, cardTotal) {
         mergeable,
         checks,
         checksInProgress,
-        quality,
         ready,
         ahead,
         publish
