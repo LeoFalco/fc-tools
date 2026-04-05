@@ -35,7 +35,8 @@
     "@stylistic/eslint-plugin": "5.10.0",
     "eslint": "10.2.0",
     "eslint-plugin-import-x": "4.16.2",
-    "eslint-plugin-n": "17.24.0"
+    "eslint-plugin-n": "17.24.0",
+    "vercel": "50.39.0"
   },
   "dependencies": {
     "axios": "1.14.0",
