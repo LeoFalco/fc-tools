@@ -15,6 +15,8 @@ function getToken () {
   return execSync('gh auth token').toString().trim()
 }
 
-export const octokit = new Octokit({
-  auth: getToken()
-})
+let _octokit
+export function getOctokit () {
+  if (!_octokit) _octokit = new Octokit({ auth: getToken() })
+  return _octokit
+}
