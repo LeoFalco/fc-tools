@@ -18,7 +18,7 @@ class DoctorCommand {
       success.push({
         message: `git is successfully installed, found version: ${gitStdout.split(' ')[2]}`
       })
-    } catch (err) {
+    } catch (_err) {
       errors.push({
         message: 'git is not installed, please install it from https://git-scm.com/downloads'
       })
@@ -29,7 +29,7 @@ class DoctorCommand {
       success.push({
         message: `gh is successfully installed, found version: ${ghStdout.split(' ')[2]}`
       })
-    } catch (err) {
+    } catch (_err) {
       errors.push({
         message: 'gh is not installed, please install it from https://cli.github.com'
       })
