@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { getOctokit } from '../../core/getOctokit().js'
+import { getOctokit } from '../../core/octokit.js'
 import { $ } from '../../core/exec.js'
 import { info } from '../../core/patch-console-log.js'
 
