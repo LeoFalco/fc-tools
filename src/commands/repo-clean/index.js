@@ -55,6 +55,8 @@ class RepoCleanCommand {
       }
     }
 
+    await $(`git checkout ${baseBranch}`)
+
     const mergedBranches = await $(`git branch --merged ${baseBranch}`)
       .then((output) => output.split('\n'))
       .then((branches) => branches.map((branch) => branch.trim()))
