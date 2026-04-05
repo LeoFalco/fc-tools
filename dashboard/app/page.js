@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useSession, signIn, signOut } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 const TEAMS = ['GRID', 'FSM', 'TODOS', 'GRID Projetos', 'GRID Sustentação', 'FSM Projetos', 'FSM Sustentação']
 
@@ -256,6 +257,7 @@ function MergedTable ({ pulls, memberStats }) {
 
 export default function Dashboard () {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [tab, setTab] = useState('opened')
   const [team, setTeam] = useState('GRID')
   const [data, setData] = useState(null)
@@ -302,18 +304,8 @@ export default function Dashboard () {
   }
 
   if (!session) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-        <h1 className="text-3xl font-bold">FC Tools Dashboard</h1>
-        <p className="text-gray-400">Acesso restrito a membros da Field Control</p>
-        <button
-          onClick={() => signIn('google')}
-          className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
-        >
-          Entrar com Google
-        </button>
-      </div>
-    )
+    router.push('/login')
+    return <div className="flex items-center justify-center min-h-screen text-gray-400">Redirecionando...</div>
   }
 
   return (
