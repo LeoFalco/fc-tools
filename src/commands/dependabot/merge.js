@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { octokit } from '../../core/octokit.js'
+import { getOctokit } from '../../core/getOctokit().js'
 import { $ } from '../../core/exec.js'
 import { info } from '../../core/patch-console-log.js'
 
@@ -109,13 +109,13 @@ function assessRisk (pr, ciStatus, onlyManifestFiles) {
 
 async function getCiStatus (owner, repoName, ref) {
   try {
-    const { data } = await octokit.rest.repos.getCombinedStatusForRef({
+    const { data } = await getOctokit().rest.repos.getCombinedStatusForRef({
       owner,
       repo: repoName,
       ref
     })
 
-    const checks = await octokit.rest.checks.listForRef({
+    const checks = await getOctokit().rest.checks.listForRef({
       owner,
       repo: repoName,
       ref
@@ -152,7 +152,7 @@ async function getCiStatus (owner, repoName, ref) {
 }
 
 async function getChangedFiles (owner, repoName, prNumber) {
-  const { data } = await octokit.rest.pulls.listFiles({
+  const { data } = await getOctokit().rest.pulls.listFiles({
     owner,
     repo: repoName,
     pull_number: prNumber,
@@ -162,7 +162,7 @@ async function getChangedFiles (owner, repoName, prNumber) {
 }
 
 async function approvePr (owner, repoName, prNumber) {
-  await octokit.rest.pulls.createReview({
+  await getOctokit().rest.pulls.createReview({
     owner,
     repo: repoName,
     pull_number: prNumber,
@@ -172,7 +172,7 @@ async function approvePr (owner, repoName, prNumber) {
 }
 
 async function mergePr (owner, repoName, prNumber) {
-  await octokit.rest.pulls.merge({
+  await getOctokit().rest.pulls.merge({
     owner,
     repo: repoName,
     pull_number: prNumber,
@@ -181,7 +181,7 @@ async function mergePr (owner, repoName, prNumber) {
 }
 
 async function listOrgRepos (owner) {
-  return octokit.paginate(octokit.rest.repos.listForOrg, {
+  return getOctokit().paginate(getOctokit().rest.repos.listForOrg, {
     org: owner,
     sort: 'name',
     per_page: 100
@@ -207,7 +207,7 @@ async function scanPrs (owner, repos) {
   for (const repo of repos) {
     const spinner = ora({ text: `Scanning ${repo.name}...` }).start()
 
-    const prs = await octokit.rest.pulls.list({
+    const prs = await getOctokit().rest.pulls.list({
       owner,
       repo: repo.name,
       state: 'open',

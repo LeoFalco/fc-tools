@@ -1,7 +1,7 @@
 // @ts-check
 
 import { red } from '../utils/utils.js'
-import { octokit } from './octokit.js'
+import { getOctokit } from './octokit.js'
 import chalk from 'chalk'
 
 const { yellow } = chalk
@@ -62,11 +62,11 @@ const GET_PULL_REQUESTS = `#graphql
 
 class GithubFacade {
   async getCurrentUser () {
-    return await octokit.rest.users.getAuthenticated()
+    return await getOctokit().rest.users.getAuthenticated()
   }
 
   async getPullRequestComments ({ organization, repo, number }) {
-    return await octokit.graphql(`
+    return await getOctokit().graphql(`
       query getPullRequestComments($organization: String!, $repo: String!, $number: Int!) {
         viewer {
           organization(login: $organization) {
@@ -96,7 +96,7 @@ class GithubFacade {
    * @param {string} params.repo
    */
   async listWorkflowJobs ({ owner, repo }) {
-    return await octokit.rest.actions
+    return await getOctokit().rest.actions
       .listWorkflowRunsForRepo({
         owner,
         repo,
@@ -161,7 +161,7 @@ class GithubFacade {
             ? `is:pr org:${params.organization} is:${state} merged:${params.from}..${params.to} sort:merged-desc author:${assignee}`
             : `is:pr org:${params.organization} is:${state} created:${params.from}..${params.to} sort:created-desc author:${assignee}`
           console.log(`Query [${assignee}]:`, searchQuery)
-          const data = await octokit.graphql(LIST_PRS_V2, {
+          const data = await getOctokit().graphql(LIST_PRS_V2, {
             searchQuery
           })
 
@@ -196,7 +196,7 @@ class GithubFacade {
 
     return Promise.all(
       filteredPulls.map(async (pull) => {
-        return octokit.graphql(GET_PULL_REQUESTS, {
+        return getOctokit().graphql(GET_PULL_REQUESTS, {
           organization: params.organization,
           repository: pull.repo,
           number: parseInt(pull.number)
@@ -221,7 +221,7 @@ class GithubFacade {
   }
 
   async getPullRequest (params) {
-    return octokit.graphql(GET_PULL_REQUESTS, {
+    return getOctokit().graphql(GET_PULL_REQUESTS, {
       organization: params.organization,
       repository: params.repo,
       number: params.number
@@ -234,7 +234,7 @@ class GithubFacade {
   }
 
   async isAheadOfBase ({ owner, repo, baseRef, headRef }) {
-    const compare = await octokit.rest.repos.compareCommits({
+    const compare = await getOctokit().rest.repos.compareCommits({
       owner,
       repo,
       base: baseRef,
@@ -250,7 +250,7 @@ class GithubFacade {
   }
 
   async rebasePullRequest ({ owner, repo, number }) {
-    await octokit.rest.pulls.updateBranch({
+    await getOctokit().rest.pulls.updateBranch({
       owner,
       repo,
       pull_number: number
@@ -259,7 +259,7 @@ class GithubFacade {
 }
 
 export const getChecks = async (owner, repo, ref) => {
-  return await octokit.rest.checks
+  return await getOctokit().rest.checks
     .listForRef({
       owner,
       repo,
