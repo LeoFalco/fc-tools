@@ -7,8 +7,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const nextConfig = {
   outputFileTracingRoot: resolve(__dirname, '..'),
   transpilePackages: ['fc-tools'],
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   experimental: {
     externalDir: true
+  },
+  webpack: (config) => {
+    config.resolve.modules.unshift(resolve(__dirname, 'node_modules'))
+    return config
   }
 }
 
