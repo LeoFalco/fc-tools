@@ -403,6 +403,7 @@ async function mergeCardPrs (card, options, cardIndex, cardTotal) {
       number: pullRequest.number
     }).then(() => {
       console.log(dim('    Rebase ok'))
+      return undefined
     }).catch(() => {
       console.log(gray('    Rebase failed (ignored)'))
     })

@@ -41,7 +41,7 @@ export async function $ (command, options) {
     reject: options.reject,
     stdio: options.stdio || 'pipe',
     timeout: options.timeout,
-    cancelSignal: options.signal,
+    cancelSignal: options.signal
 
   })
     .then(result => {

@@ -54,7 +54,7 @@ class PrCleanCommand {
           mergedBranches.push({ branch, url: prData.url })
           info(`Found merged PR for branch ${branch}: ${prData.url}`)
         }
-      } catch (err) {
+      } catch (_err) {
         // ignore errors
       }
     }

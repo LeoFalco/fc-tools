@@ -97,16 +97,16 @@ class PrCreateCommand {
       commitMessage
     })
 
-    let pullRequestDescription = ''
+    let pullRequestDescription
 
     if (options.bodyFile) {
       pullRequestDescription = await readFile(options.bodyFile, { encoding: 'utf8' })
     } else {
       const completion = options.generate
         ? await generateFieldNewsSuggestion({
-          pullRequestTitle,
-          repoDescription
-        })
+            pullRequestTitle,
+            repoDescription
+          })
         : ''
 
       pullRequestDescription = await buildPullRequestDescription({
@@ -140,9 +140,9 @@ class PrCreateCommand {
         await $(`gh pr edit--add - label '${hotfixLabelName}'`)
       } else {
         info('Creating and adding hotfix label: hotfix 🔥')
-        await $("gh label create 'hotfix 🔥' --color ff0000 --description 'Hotfix label'")
+        await $('gh label create \'hotfix 🔥\' --color ff0000 --description \'Hotfix label\'')
         console.log('Adding hotfix label: hotfix 🔥')
-        await $("gh pr edit --add-label 'hotfix 🔥'")
+        await $('gh pr edit --add-label \'hotfix 🔥\'')
       }
     }
 
@@ -282,7 +282,7 @@ async function getPrefixFromFieldnewsWorkflow ({ repoPath }) {
       .find((line) => line.includes('ALLOWED_TITLE_PREFIXES'))
     if (line) {
       const lineReplaced = line.replace('const ALLOWED_TITLE_PREFIXES =', '')
-      // eslint-disable-next-line no-eval
+
       const result = eval(lineReplaced)
       if (result && result.length) {
         return result.map((value) => value.trim())
