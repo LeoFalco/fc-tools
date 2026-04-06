@@ -186,7 +186,7 @@ function StatsPanel ({ opened, merged }) {
   )
 }
 
-function MergedTable ({ pulls, memberStats }) {
+function MergedTable ({ pulls }) {
   if (!pulls) return null
   return (
     <div>
@@ -219,36 +219,6 @@ function MergedTable ({ pulls, memberStats }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-      <div className="mt-6">
-        <h3 className="text-gray-400 text-sm font-medium mb-2">PRs por membro</h3>
-        <table className="text-sm">
-          <thead>
-            <tr className="border-b border-gray-700 text-gray-400 text-left">
-              <th className="py-1 px-2">Membro</th>
-              <th className="py-1 px-2 text-right">PRs</th>
-            </tr>
-          </thead>
-          <tbody>
-            {memberStats.map((m) => (
-              <tr key={m.author} className="border-b border-gray-800">
-                <td className="py-1 px-2">
-                  <div className="flex items-center gap-2">
-                    <img src={`https://github.com/${m.author}.png?size=40`} alt="" className="w-5 h-5 rounded-full" />
-                    {m.author}
-                  </div>
-                </td>
-                <td className="py-1 px-2 text-right">{m.count}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-gray-600 text-gray-300 font-medium">
-              <td className="py-1 px-2">Total</td>
-              <td className="py-1 px-2 text-right">{pulls.length}</td>
-            </tr>
-          </tfoot>
         </table>
       </div>
     </div>
