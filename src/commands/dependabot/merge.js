@@ -35,15 +35,39 @@ function isManifestFile (filename) {
   return false
 }
 
-function parseVersionBump (title) {
-  const match = title.match(/from\s+v?(\d+)\.(\d+)\.(\d+)\s+to\s+v?(\d+)\.(\d+)\.(\d+)/i)
+function parseVersionBumpFromText (text) {
+  // Match semver (1.2.3), two-part (1.2), or single-digit (4) versions
+  const match = text.match(/from\s+v?(\d+)(?:\.(\d+))?(?:\.(\d+))?\s+to\s+v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i)
   if (!match) return 'unknown'
 
-  const [, oldMaj, oldMin, , newMaj, newMin] = match.map(Number)
+  const [, oldMaj, oldMin, oldPatch, newMaj, newMin, newPatch] = match.map(v => v !== undefined ? Number(v) : undefined)
 
   if (oldMaj !== newMaj) return 'major'
   if (oldMin !== newMin) return 'minor'
-  return 'patch'
+  if (oldPatch !== newPatch) return 'patch'
+  return 'unknown'
+}
+
+function parseVersionBumpFromMetadata (text) {
+  const updateTypes = [...text.matchAll(/update-type:\s*version-update:semver-(\w+)/g)]
+    .map(m => m[1])
+
+  if (updateTypes.length === 0) return 'unknown'
+  if (updateTypes.includes('major')) return 'major'
+  if (updateTypes.includes('minor')) return 'minor'
+  if (updateTypes.every(t => t === 'patch')) return 'patch'
+  return 'unknown'
+}
+
+function parseVersionBump (title, commitMessage) {
+  const bump = parseVersionBumpFromText(title)
+  if (bump !== 'unknown') return bump
+  if (commitMessage) {
+    const fromText = parseVersionBumpFromText(commitMessage)
+    if (fromText !== 'unknown') return fromText
+    return parseVersionBumpFromMetadata(commitMessage)
+  }
+  return 'unknown'
 }
 
 function isGitHubAction (title) {
@@ -61,8 +85,8 @@ function isDevelopmentDep (title) {
   return devPatterns.some(p => lower.includes(p))
 }
 
-function assessRisk (pr, ciStatus, onlyManifestFiles) {
-  const bump = parseVersionBump(pr.title)
+function assessRisk (pr, ciStatus, onlyManifestFiles, commitMessage) {
+  const bump = parseVersionBump(pr.title, commitMessage)
   const isAction = isGitHubAction(pr.title)
   const isDev = isDevelopmentDep(pr.title)
   const ciPassing = ciStatus === 'passing'
@@ -151,6 +175,20 @@ async function getCiStatus (owner, repoName, ref) {
   }
 }
 
+async function getFirstCommitMessage (owner, repoName, prNumber) {
+  try {
+    const { data } = await getOctokit().rest.pulls.listCommits({
+      owner,
+      repo: repoName,
+      pull_number: prNumber,
+      per_page: 1
+    })
+    return data[0]?.commit?.message || ''
+  } catch {
+    return ''
+  }
+}
+
 async function getChangedFiles (owner, repoName, prNumber) {
   const { data } = await getOctokit().rest.pulls.listFiles({
     owner,
@@ -226,13 +264,14 @@ async function scanPrs (owner, repos) {
     spinner.succeed(`${repo.name} — ${dependabotPrs.length} Dependabot PR(s)`)
 
     for (const pr of dependabotPrs) {
-      const [ci, files] = await Promise.all([
+      const [ci, files, commitMessage] = await Promise.all([
         getCiStatus(owner, repo.name, pr.head.sha),
-        getChangedFiles(owner, repo.name, pr.number)
+        getChangedFiles(owner, repo.name, pr.number),
+        getFirstCommitMessage(owner, repo.name, pr.number)
       ])
 
       const onlyManifest = files.every(f => isManifestFile(f))
-      const assessment = assessRisk(pr, ci.status, onlyManifest)
+      const assessment = assessRisk(pr, ci.status, onlyManifest, commitMessage)
 
       const riskColor = assessment.risk === 'low'
         ? green
