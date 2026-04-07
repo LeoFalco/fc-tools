@@ -320,13 +320,14 @@ export async function mergeAction (options) {
   const summary = { merged: [], errored: [] }
 
   for (const entry of selected) {
+    const spinner = ora({ text: `${entry.repo}#${entry.pr} — approving and merging` }).start()
     try {
       await approvePr(owner, entry.repo, entry.pr)
       await mergePr(owner, entry.repo, entry.pr)
-      console.log(green(`  ✓ ${entry.repo}#${entry.pr} — approved and merged`))
+      spinner.succeed(`${entry.repo}#${entry.pr} — approved and merged`)
       summary.merged.push(entry)
     } catch (err) {
-      console.log(red(`  ✗ ${entry.repo}#${entry.pr} — ${err.message}`))
+      spinner.fail(`${entry.repo}#${entry.pr} — ${err.message}`)
       summary.errored.push({ ...entry, error: err.message })
     }
   }

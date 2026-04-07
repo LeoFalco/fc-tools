@@ -1,3 +1,4 @@
+import ora from 'ora'
 import { $ } from '../../core/exec.js'
 import { info } from '../../core/patch-console-log.js'
 
@@ -15,15 +16,20 @@ export async function rebaseAction (options) {
 
   for (const pr of prs) {
     const { number, author } = pr
-    info(`Processing PR #${number} by ${author.login}...`)
-
     const botName = author.login.toLowerCase().includes('dependabot') ? 'dependabot' : 'renovate'
-    await $(`gh pr comment ${number} --body @${botName}\\ rebase`)
 
-    if (options.merge) {
-      await $(`gh pr merge ${number} --auto --squash`).catch((error) => {
-        info(`Failed to merge PR #${number}.`, error.message)
-      })
+    const spinner = ora({ text: `PR #${number} by ${author.login} — commenting @${botName} rebase` }).start()
+    try {
+      await $(`gh pr comment ${number} --body @${botName}\\ rebase`, { loading: false, disableLog: true })
+
+      if (options.merge) {
+        spinner.text = `PR #${number} by ${author.login} — enabling auto-merge`
+        await $(`gh pr merge ${number} --auto --squash`, { loading: false, disableLog: true })
+      }
+
+      spinner.succeed(`PR #${number} by ${author.login} — done`)
+    } catch (err) {
+      spinner.fail(`PR #${number} by ${author.login} — ${err.message}`)
     }
   }
 
