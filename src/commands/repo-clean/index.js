@@ -31,8 +31,17 @@ class RepoCleanCommand {
       return match ? match[1] : 'master'
     })
 
-    await $(`git checkout ${baseBranch}`)
-    await $(`git pull origin ${baseBranch}`)
+    const workTrees = await listWorkTrees()
+    const workTreeBranches = new Set(workTrees.map((w) => w.branch).filter(Boolean))
+    const baseWorkTree = workTrees.find((w) => w.branch === baseBranch)
+    const runningFromWorkTree = workTrees.some((w) => w.path === process.cwd() && !w.isMain)
+
+    if (baseWorkTree) {
+      await $(`git pull origin ${baseBranch}`, { cwd: baseWorkTree.path })
+    } else {
+      await $(`git checkout ${baseBranch}`)
+      await $(`git pull origin ${baseBranch}`)
+    }
 
     const branches = await $('git branch')
       .then((output) => output.split('\n'))
@@ -40,6 +49,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
       .then((branches) => branches.filter((branch) => branch.startsWith('+') === false))
+      .then((branches) => branches.filter((branch) => !workTreeBranches.has(branch)))
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => !branch.startsWith(baseBranch)))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
@@ -56,7 +66,16 @@ class RepoCleanCommand {
       }
     }
 
-    await $(`git checkout ${baseBranch}`)
+    if (!runningFromWorkTree) {
+      await $(`git checkout ${baseBranch}`)
+    }
+
+    const removableWorkTrees = workTrees.filter((w) => !w.isMain && w.path !== process.cwd())
+    for (const workTree of removableWorkTrees) {
+      info(`Removing worktree ${workTree.path}${workTree.branch ? ` (${workTree.branch})` : ''}`)
+      await $(`git worktree remove ${workTree.path}`)
+      if (workTree.branch) workTreeBranches.delete(workTree.branch)
+    }
 
     const mergedBranches = await $(`git branch --merged ${baseBranch}`)
       .then((output) => output.split('\n'))
@@ -65,6 +84,7 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== ''))
       .then((branches) => branches.filter((branch) => branch.startsWith('*') === false))
       .then((branches) => branches.filter((branch) => branch.startsWith('+') === false))
+      .then((branches) => branches.filter((branch) => !workTreeBranches.has(branch)))
       .then((branches) => branches.filter((branch) => branch !== baseBranch))
       .then((branches) => branches.filter((branch) => branch !== 'preview'))
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
@@ -112,6 +132,29 @@ class RepoCleanCommand {
       }
     }
   }
+}
+
+async function listWorkTrees () {
+  const output = await $('git worktree list --porcelain', { disableLog: true, loading: false })
+  if (typeof output !== 'string' || output === '') return []
+
+  const workTrees = []
+  let current = {}
+  for (const line of output.split('\n')) {
+    if (line === '') {
+      if (current.path) workTrees.push(current)
+      current = {}
+      continue
+    }
+    const [key, ...rest] = line.split(' ')
+    const value = rest.join(' ')
+    if (key === 'worktree') current.path = value
+    else if (key === 'branch') current.branch = value.replace('refs/heads/', '')
+  }
+  if (current.path) workTrees.push(current)
+
+  if (workTrees.length > 0) workTrees[0].isMain = true
+  return workTrees
 }
 
 export default new RepoCleanCommand()
