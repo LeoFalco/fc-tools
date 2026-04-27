@@ -95,7 +95,8 @@ function assessRisk (pr, ciStatus, onlyManifestFiles, commitMessage) {
   )
 
   if (bump === 'major') {
-    return { risk: 'high', bump, reason: 'major version bump' }
+    const ciLabel = ciPassing ? 'CI passing' : ciStatus === 'failing' ? 'CI failing' : 'CI pending'
+    return { risk: 'high', bump, reason: `major version bump, ${ciLabel}` }
   }
 
   if (bump === 'unknown') {
@@ -337,13 +338,26 @@ export async function mergeAction (options) {
       ? yellow
       : red
 
-  console.log('')
+  const mergeable = candidates.filter(c => c.ci !== 'failing')
+  const skipped = candidates.length - mergeable.length
+
+  if (skipped > 0) {
+    console.log(yellow(`\nSkipped ${skipped} PR(s) with failing CI.\n`))
+  } else {
+    console.log('')
+  }
+
+  if (mergeable.length === 0) {
+    console.log(yellow('No mergeable PRs remaining.'))
+    return
+  }
+
   const { selected } = await inquirer.prompt([{
     type: 'checkbox',
     name: 'selected',
     message: 'Select PRs to approve and merge:',
-    choices: candidates.map(c => ({
-      name: `${c.repo}#${c.pr} ${c.title} ${riskColor(c.risk)(`[${c.risk}]`)}`,
+    choices: mergeable.map(c => ({
+      name: `${c.repo}#${c.pr} ${c.title} ${riskColor(c.risk)(`[${c.risk}]`)} ${gray(`— ${c.reason}`)}`,
       value: c,
       checked: c.risk === 'low'
     }))
