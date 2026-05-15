@@ -55,14 +55,15 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
       .then((branches) => branches.filter((branch) => branch !== 'wiki/master'))
 
+    const obsoleteBranches = new Set()
     for (const branch of branches) {
-      const isAhead = await $(`git log ${baseBranch}..${branch} --oneline`).then((output) => output !== '')
-      if (isAhead) {
+      if (await hasUnmergedCommits(branch, baseBranch)) {
         await $(`git checkout ${branch}`)
         await $(`git rebase ${baseBranch}`)
         await $(`git push origin ${branch} --force --no-verify`)
       } else {
-        info(`Branch ${branch} is not ahead of ${baseBranch}`)
+        info(`Branch ${branch} has no unmerged commits relative to ${baseBranch}`)
+        obsoleteBranches.add(branch)
       }
     }
 
@@ -90,6 +91,10 @@ class RepoCleanCommand {
       .then((branches) => branches.filter((branch) => branch !== 'homolog'))
       .then((branches) => branches.filter((branch) => branch.startsWith('master') === false))
       .then((branches) => branches.filter((branch) => branch !== 'wiki/master'))
+
+    for (const branch of obsoleteBranches) {
+      if (!mergedBranches.includes(branch)) mergedBranches.push(branch)
+    }
 
     if (mergedBranches.length === 0) {
       info('No local branches to delete')
@@ -132,6 +137,19 @@ class RepoCleanCommand {
       }
     }
   }
+}
+
+/**
+ * Returns true if `branch` has at least one commit whose patch is not already in `baseBranch`.
+ * Uses `git cherry`, which compares by patch-id — so squash-merged commits are correctly identified as merged.
+ * @param {string} branch
+ * @param {string} baseBranch
+ * @returns {Promise<boolean>}
+ */
+async function hasUnmergedCommits (branch, baseBranch) {
+  const output = await $(`git cherry ${baseBranch} ${branch}`, { disableLog: true, loading: false, reject: false })
+  if (typeof output !== 'string') return false
+  return output.split('\n').some((line) => line.startsWith('+'))
 }
 
 async function listWorkTrees () {
