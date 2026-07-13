@@ -45,7 +45,7 @@
     "chalk-table": "1.0.2",
     "clipboardy": "4.0.0",
     "commander": "14.0.3",
-    "date-fns": "4.1.0",
+    "date-fns": "4.4.0",
     "date-fns-tz": "3.2.0",
     "dotenv": "17.4.2",
     "execa": "9.6.1",
